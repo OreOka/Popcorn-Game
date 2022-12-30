@@ -30,6 +30,9 @@ public class PlayerController : MonoBehaviour
     internal bool canTransform = false;
     private Vector2 direction;
 
+    [SerializeField] internal AudioSource popSoundEffect;
+    [SerializeField] internal AudioSource laserSoundEffect;
+
     Vector2 m_CurrentPosition;
     Vector2 m_PreviousPosition;
     Vector2 m_NextMovement;
@@ -75,8 +78,9 @@ public class PlayerController : MonoBehaviour
        if (Input.GetButtonDown("Pop") && !canTransform && m_PlayerManager.NumberOfActivePops > 0)
        // if (Input.GetButtonDown("Jump") && !canTransform)
         {
-            ChangeRbPhysics(m_Rigidbody, 5, 10, 55);
-            m_PlayerManager.RecordPop(m_PlayerManager.REGULARPOP);
+            laserSoundEffect.Play();
+            ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
+          //  m_PlayerManager.RecordPop("Regular");
             canTransform = true;
         }
       
@@ -105,10 +109,13 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetButtonDown("Jump") && m_PlayerManager.NumberOfActivePops > 0)
         {
-            ChangeRbPhysics(m_Rigidbody, 3, 20, 200);
+            popSoundEffect.Play();
+            ChangeRbPhysics(m_Rigidbody, 10, 10, 200);
             Vector2 _velocity = (new Vector2(m_Rigidbody.velocity.x, power));
             m_Rigidbody.velocity = _velocity;
-            m_PlayerManager.RecordPop(m_PlayerManager.DODGE);
+            CharacterEvents.characterPopped("Dodge", gameObject);
+
+       //     m_PlayerManager.RecordPop("Dodge");
 
         }
 
@@ -144,12 +151,7 @@ public class PlayerController : MonoBehaviour
         this.power = power;
     }
 
-    private void ImplementDodgePop()
-    {
-
        
-
-    }
 
     private void Run(float horizontal, float vertical, LineRenderer lineRenderer)
     {
@@ -170,146 +172,6 @@ public class PlayerController : MonoBehaviour
     {
         return canTransform;
     }
-
-  /*  public void CheckCapsuleCollisions(bool bottom = true)
-    {
-        Vector2 raycastDirection;
-        Vector2 raycastStart;
-        float raycastDistance;
-        
-
-        if (m_Capsule == null)
-        {
-            raycastStart = m_Rigidbody.position + Vector2.up;
-            raycastDistance = 1f + groundedRayCastDistance;
-
-            if (bottom)
-            {
-                raycastDirection = Vector2.down;
-
-                m_RaycastPositions[0] = raycastStart + Vector2.left * 0.4f;
-                m_RaycastPositions[1] = raycastStart;
-                m_RaycastPositions[2] = raycastStart + Vector2.right * 0.4f;
-            }
-            else
-            {
-                raycastDirection = Vector2.up;
-
-                m_RaycastPositions[0] = raycastStart + Vector2.left * 0.4f;
-                m_RaycastPositions[1] = raycastStart;
-                m_RaycastPositions[2] = raycastStart + Vector2.right * 0.4f;
-            }
-            
-        }
-        else
-        {
-            raycastStart = m_Rigidbody.position + m_Capsule.offset;
-            raycastDistance = m_Capsule.size.x * 0.5f + groundedRayCastDistance * 2f;
-
-            if (bottom)
-            {
-                raycastDirection = Vector2.down;
-                Vector2 raycastStartBottomCentre = raycastStart + Vector2.down * (m_Capsule.size.y * 0.5f - m_Capsule.size.x * 0.5f);
-
-                m_RaycastPositions[0] = raycastStartBottomCentre + Vector2.left * m_Capsule.size.x * 0.5f;
-                m_RaycastPositions[1] = raycastStartBottomCentre;
-                m_RaycastPositions[2] = raycastStartBottomCentre + Vector2.right * m_Capsule.size.x * 0.5f;
-            }
-            else
-            {
-                raycastDirection = Vector2.up;
-                Vector2 raycastStartTopCentre = raycastStart + Vector2.up * (m_Capsule.size.y * 0.5f);
-
-                m_RaycastPositions[0] = raycastStartTopCentre + Vector2.left * m_Capsule.size.x * 0.5f;
-                m_RaycastPositions[1] = raycastStartTopCentre;
-                m_RaycastPositions[2] = raycastStartTopCentre + Vector2.right * m_Capsule.size.x * 0.5f;
-            }
-
-            for (int i = 0; i < m_RaycastPositions.Length; i++)
-            {
-                int count = Physics2D.Raycast(m_RaycastPositions[i], raycastDirection, m_ContactFilter, m_HitBuffer, raycastDistance);
-
-                if (bottom)
-                {
-                    m_FoundHits[i] = count > 0 ? m_HitBuffer[0] : new RaycastHit2D();
-                    m_GroundColliders[i] = m_FoundHits[i].collider;
-                }
-                else
-                {
-                    IsCeilinged = false;
-
-                    for (int j = 0; j < m_HitBuffer.Length; j++)
-                    {
-                        if (m_HitBuffer[j].collider != null)
-                        {
-                            if (!PhysicsHelper.ColliderHasPlatformEffector(m_HitBuffer[j].collider))
-                                IsCeilinged = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (bottom)
-        {
-            Vector2 groundNormal = Vector2.zero;
-            int hitCount = 0;
-
-            for (int i = 0; i < m_FoundHits.Length; i++)
-            {
-                if (m_FoundHits[i].collider != null)
-                {
-                    groundNormal += m_FoundHits[i].normal;
-                    hitCount++;
-                }
-            }
-            if (hitCount > 0)
-            {
-                groundNormal.Normalize();
-            }
-            Vector2 relativeVelocity = Velocity;
-            for (int i = 0; i < m_GroundColliders.Length; i++)
-            {
-                if (m_GroundColliders[i] == null)
-                    continue;
-
-              /*  MovingPlatform movingPlatform;
-
-                if (PhysicsHelper.TryGetMovingPlatform(m_GroundColliders[i], out movingPlatform))
-                {
-                    relativeVelocity -= movingPlatform.Velocity / Time.deltaTime;
-                    break;
-               // }
-            }
-
-            if (Mathf.Approximately(groundNormal.x, 0f) && Mathf.Approximately(groundNormal.y, 0f))
-            {
-                IsGrounded = false;
-            }
-            else
-            {
-                IsGrounded = relativeVelocity.y <= 0f;
-
-                if (m_Capsule != null)
-                {
-                    if (m_GroundColliders[1] != null)
-                    {
-                        float capsuleBottomHeight = m_Rigidbody.position.y + m_Capsule.offset.y - m_Capsule.size.y * 0.5f;
-                        float middleHitHeight = m_FoundHits[1].point.y;
-                        IsGrounded &= middleHitHeight < capsuleBottomHeight + groundedRayCastDistance;
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < m_HitBuffer.Length; i++)
-        {
-            m_HitBuffer[i] = new RaycastHit2D();
-        }
-
-}*/
-    
-
     public Vector2[] Plot(Vector2 pos, Vector2 velocity, int steps)
     {
         Vector2[] results = new Vector2[steps];
@@ -362,14 +224,14 @@ public class PlayerController : MonoBehaviour
 
 public abstract class State
 {
-    public PlayerController player;
+    public PlayerController playerController;
 
-    
+    public CharacterEvents characterEvents;
  
 
     public void SetPlayer(PlayerController playerController)
     {
-        this.player = playerController;
+        this.playerController = playerController;
     }
 
     public abstract void IsHit();
@@ -397,19 +259,19 @@ public class PopCornState : State
 
     public override bool PlayerMovement(Vector2 direction, LineRenderer line)
     {
-        if (player.getCanTransform()) //player is beginning a kernel pop
+        if (playerController.getCanTransform()) //player is beginning a kernel pop
         {
             KernelState kernelState = new KernelState(Time.time);
-            kernelState.SetPlayer(player);// it is important to do for everytransition so fix constructor
-            player.TransitionTo(kernelState);
+            kernelState.SetPlayer(playerController);// it is important to do for everytransition so fix constructor
+            playerController.TransitionTo(kernelState);
             return true;
         }
         //      handle regular movement
        // if(player.transform.position == new Vector3(3.30552506f, -7.82100248f, 0))
        
         
-            _velocity = new Vector2(direction.x * player.runSpeed, player.m_Rigidbody.velocity.y);
-            player.m_Rigidbody.velocity = _velocity;
+            _velocity = new Vector2(direction.x * playerController.runSpeed, playerController.m_Rigidbody.velocity.y);
+            playerController.m_Rigidbody.velocity = _velocity;
         
      
 
@@ -458,10 +320,10 @@ public class KernelState : State
         loadTime = 0.4f;
 
         Vector2 _velocity; 
-        _velocity= direction * player.power;
+        _velocity= direction * playerController.power;
 
 
-         Vector2[] trajectory = player.Plot((Vector2)player.transform.position, _velocity, 250);
+         Vector2[] trajectory = playerController.Plot((Vector2)playerController.transform.position, _velocity, 250);
         bool isGoingForward = true;
         if (midPoint == 0f || midPoint != trajectory[3].x)
             midPoint = trajectory[3].x;
@@ -477,10 +339,10 @@ public class KernelState : State
             //Change state and reset temporary paramaters
         
             PopCornState popCornState = new PopCornState();
-            popCornState.SetPlayer(player);
-            this.player.TransitionTo(popCornState);
+            popCornState.SetPlayer(playerController);
+            this.playerController.TransitionTo(popCornState);
             midPoint = 0f;
-            player.canTransform = false;
+            playerController.canTransform = false;
             receivedPush = false;
             return false;
         }
@@ -500,22 +362,22 @@ public class KernelState : State
 
         //check the timer  variables a video on Time time maybe??
         //loadTime = 0f;
-        if (player.timer > loadTimer + loadTime && player.timer < loadTimer + loadTime + 0.2f)//-- you may want to add this again>>>
+        if (playerController.timer > loadTimer + loadTime && receivedPush != true)//-- you may want to add this again>>>
         {
+            CharacterEvents.characterPopped.Invoke("Regular", playerController.gameObject);
 
+            playerController.popSoundEffect.Play();
             Time.timeScale = 1f;// 
             
 
-            Vector2 testVelocity = new Vector2(0, player.power * 1);
+            
 
-            //player.m_Rigidbody.velocity = testVelocity;
-
-            player.m_Rigidbody.velocity = _velocity;
+            playerController.m_Rigidbody.velocity = _velocity;
             receivedPush = true;
 
             return true;
         }
-        else if (player.timer <= loadTimer + loadTime)
+        else if (playerController.timer <= loadTimer + loadTime)
         {
 
             Time.timeScale = 0.6f;// 
@@ -535,21 +397,21 @@ public class KernelState : State
 
         if (isGoingForward)
         {
-            if (player.transform.position.x >= midPoint)
+            if (playerController.transform.position.x >= midPoint)
             {
-                Debug.Log("Transform: " + player.transform.position.x + "\nMidpoint: " +
+                Debug.Log("Transform: " + playerController.transform.position.x + "\nMidpoint: " +
                     midPoint);
             }
-            return player.transform.position.x >= midPoint;
+            return playerController.transform.position.x >= midPoint;
         }
         else
         {
-            if (player.transform.position.x <= midPoint)
+            if (playerController.transform.position.x <= midPoint)
             {
-                Debug.Log("Transform: " + player.transform.position.x + "\nMidpoint: " +
+                Debug.Log("Transform: " + playerController.transform.position.x + "\nMidpoint: " +
                     midPoint);
             }
-            return player.transform.position.x <= midPoint;
+            return playerController.transform.position.x <= midPoint;
         }
     }
 
