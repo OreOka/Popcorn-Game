@@ -4,14 +4,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Unity.VisualScripting;
 using UnityEditor.Rendering;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-
-[RequireComponent(typeof(PlayerManager))]
-[RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(Collider2D))]
 
 public class PlayerController : MonoBehaviour
 {
@@ -45,6 +43,7 @@ public class PlayerController : MonoBehaviour
     private State state;
     private float runTimer;
     private PlayerManager m_PlayerManager;
+    public LayerMask deathLayerMask;
 
     public bool IsCeilinged { get; private set; }
     public Vector2 Velocity { get; private set; }
@@ -56,7 +55,7 @@ public class PlayerController : MonoBehaviour
     {
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_LineRenderer= GetComponent<LineRenderer>();
-        m_PlayerManager= GetComponent<PlayerManager>();
+       
         m_Capsule= GetComponent<CapsuleCollider2D>();
         state = new PopCornState();
         state.SetPlayer(this);
@@ -67,10 +66,14 @@ public class PlayerController : MonoBehaviour
      
 
     }
-    // Update is called once per frame
     private void Start()
     {
-       
+        m_PlayerManager = gameObject.AddComponent(typeof(PlayerManager)) as PlayerManager;
+    }
+    // Update is called once per frame
+    private void FixedUpdate()
+    {
+        checkDeath();
     }
     void Update()
     {
@@ -79,7 +82,7 @@ public class PlayerController : MonoBehaviour
         float leftVertical = Input.GetAxis("Vertical");
         float rightVertical = Input.GetAxis("Mouse Y");
 
-       if (Input.GetButtonDown("Pop") && !canTransform && m_PlayerManager.NumberOfActivePops > 0)
+       if (Input.GetButtonDown("Pop") && !canTransform && m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
        // if (Input.GetButtonDown("Jump") && !canTransform)
         {
             laserSoundEffect.Play();
@@ -87,10 +90,14 @@ public class PlayerController : MonoBehaviour
           //  m_PlayerManager.RecordPop("Regular");
             canTransform = true;
         }
-      
+       else if (m_PlayerManager.EnergyLevel < m_PlayerManager.regularPopEnergy)
+        {
+            //TODO Send event
+        }
 
-      
-        isUsingPowerUp = Input.GetButton("Power up");
+
+
+            isUsingPowerUp = Input.GetButton("Power up");
 
         //animation curve to set speed applicatiion
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
@@ -111,36 +118,20 @@ public class PlayerController : MonoBehaviour
             runTimer = 0;
         }
 
-        if (Input.GetButtonDown("Jump") && m_PlayerManager.NumberOfActivePops > 0)
+        if (Input.GetButtonDown("Jump") && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
         {
             popSoundEffect.Play();
             ChangeRbPhysics(m_Rigidbody, 10, 10, 200);
             Vector2 _velocity = (new Vector2(m_Rigidbody.velocity.x, power));
             m_Rigidbody.velocity = _velocity;
             CharacterEvents.characterPopped("Dodge", gameObject);
-
-       //     m_PlayerManager.RecordPop("Dodge");
-
+        }
+        else if (m_PlayerManager.EnergyLevel < m_PlayerManager.dodgePopEnergy)
+        {
+            //TODOsend event
         }
 
-        //pop 
-
-            //add force to the ball on hit click
-            //set hit to true 
-
-            //-----states---------
-            //-popcorn mode
-
-            //-kernel mode
-            //-powered up state
-
-
-            //while hit is true
-            //  if not let go stay in popcorn state 
-
-
-            //use state design pattern to determine what happens for damages and actually everything
-
+        
     }
 
     private float SetAnimationCurve(float runSpeed, AnimationCurve runSpeedCurve)
@@ -202,12 +193,34 @@ public class PlayerController : MonoBehaviour
         Debug.Log("Transitioning to "+ state);
 
     }
+    public void checkDeath()
+    {
+        float extraHeightText = 0.1f;
 
+        RaycastHit2D raycastHit = Physics2D.BoxCast(m_Capsule.bounds.center, m_Capsule.bounds.size, 0f, Vector2.down, extraHeightText, deathLayerMask);
+        Color rayColor;
+        if (raycastHit.collider != null)
+        {
+            rayColor = Color.green;
+            CharacterEvents.characterDefeated.Invoke(gameObject);
+
+        }
+        else
+        {
+            rayColor = Color.red;
+        }
+        Debug.DrawRay(m_Capsule.bounds.center + new Vector3(m_Capsule.bounds.extents.x, 0), Vector2.down * (m_Capsule.bounds.extents.y + extraHeightText), rayColor);
+        Debug.DrawRay(m_Capsule.bounds.center - new Vector3(m_Capsule.bounds.extents.x, 0), Vector2.down * (m_Capsule.bounds.extents.y + extraHeightText), rayColor);
+        Debug.DrawRay(m_Capsule.bounds.center - new Vector3(m_Capsule.bounds.extents.x, m_Capsule.bounds.extents.y + extraHeightText), Vector2.down * (m_Capsule.bounds.extents.x), rayColor);
+
+        
+    }
 
     public bool IsGrounded()
     {
         
         float extraHeightText = 0.1f;
+
         RaycastHit2D raycastHit = Physics2D.BoxCast(m_Capsule.bounds.center,m_Capsule.bounds.size, 0f, Vector2.down, extraHeightText, platformLayerMask);
         Color rayColor;
         if (raycastHit.collider != null)

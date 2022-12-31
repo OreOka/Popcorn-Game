@@ -1,69 +1,93 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PlayerManager : MonoBehaviour
 {
-    [SerializeField] private int regularRecoveryTime = 3;
-    [SerializeField] private int dodgeRecoveryTime = 2;
-    [SerializeField] private Slider slider;
+    public float regularPopEnergy = 0.3f;
+    public float dodgePopEnergy= 0.2f;
+    private Slider slider;
+    [SerializeField] private float recoveryRate  = 0.1f;
     private IEnumerator recoveryCouroutine;
-
+    private PlayerController playerController;
     
 
     
-    public int NumberOfActivePops { get; private set; }
+    public float EnergyLevel { get; private set; }
     public bool isPopping { get; private set; }
 
-    private string switchType;
+    private float timer = 1f;
+
+
+    private float recoveryTimeElapsed;
 
     private void Awake()
     {
         CharacterEvents.characterPopped += RecordPop;
+        slider = GameObject.Find("PowerSlider").GetComponent<Slider>();
+        playerController = GetComponent<PlayerController>();
     }
-    IEnumerator WaitAndRecover(float time)
+    private void OnDestroy()
     {
-        yield return new WaitForSeconds(time);
-        //TODO play animation to increase correct Pop
-        NumberOfActivePops++;
-        print("Wait and Recover. Number of Pops  " + NumberOfActivePops);
+        CharacterEvents.characterPopped -= RecordPop;
     }
 
-    public void setPop(string switchType)
+    void AddPoints()
     {
-        isPopping = true;
-        this.switchType = switchType;
-    }
-    private void Start()
+            EnergyLevel += .01f;
+            print("We are doing it");
+
+     }
+
+        private void Start()
     {
-        NumberOfActivePops = 3;
+        EnergyLevel = 1;
         // Start function WaitAndPrint as a coroutine.
 
     }
     private void Update()
     {
-     
-        slider.value = NumberOfActivePops;
+        slider.value = EnergyLevel;
+        if (EnergyLevel < 1)
+        {
+            Debug.Log("Timer " + timer);
+            Debug.Log("Time.Time " + Time.time);
+
+            if ((Time.time - timer) > 0)
+            {
+                AddPoints();
+                timer= Time.time+recoveryRate;
+            }
+        }
+        else timer = Time.time+recoveryRate;
+
+        if (playerController.IsGrounded())
+        {
+            recoveryRate = 0.00001f;
+        }
+        else recoveryRate = 0.1f;
+
+
     }
+
 
     public void RecordPop(string popType, GameObject gameObject)
     {
         switch (popType)
         {
             case "Dodge": //which is DODGE value
-                NumberOfActivePops--;
-                recoveryCouroutine = WaitAndRecover(dodgeRecoveryTime);
-                StartCoroutine(recoveryCouroutine);
-               
+                EnergyLevel -=0.1f;
+                
 
                 //TODO: play animation on screen of pop being taken away
                 //TODO: 
                 break;
             case "Regular": //which is REGULAR POP value
-                NumberOfActivePops--;
-                recoveryCouroutine = WaitAndRecover(regularRecoveryTime);
-                StartCoroutine(recoveryCouroutine);
+                EnergyLevel-=0.3f;
+               
                 //TODO: play animation on screen of pop being taken away
                 break;
             default:

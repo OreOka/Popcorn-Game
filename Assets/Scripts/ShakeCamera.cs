@@ -62,8 +62,6 @@ public class ShakeCamea : MonoBehaviour
     }
     public void StartShake()
     {
-        Debug.Log("Shake Camera");
-        Debug.Log("Game object" + gameObject.tag);
         noisePerlin.m_AmplitudeGain = amplitudeGain;
         noisePerlin.m_FrequencyGain = frequencyGain;
         isShaking = true;

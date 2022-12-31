@@ -12,5 +12,6 @@ public class CharacterEvents : ScriptableObject
     public static UnityAction<float, GameObject> characterDamaged;
 
     public static UnityAction<GameObject> characterDefeated;
+    public static UnityAction<string, GameObject> NotAvailablePlayerAction;
 
 }
