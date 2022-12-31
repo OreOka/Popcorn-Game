@@ -8,10 +8,9 @@ using UnityEngine.UI;
 public class PlayerManager : MonoBehaviour
 {
     public float regularPopEnergy = 0.3f;
-    public float dodgePopEnergy= 0.2f;
+    public float dodgePopEnergy= 0.22f;
     private Slider slider;
-    [SerializeField] private float recoveryRate  = 0.1f;
-    private IEnumerator recoveryCouroutine;
+    [SerializeField] private float recoveryRate  = 0.9f;
     private PlayerController playerController;
     
 
@@ -53,9 +52,6 @@ public class PlayerManager : MonoBehaviour
         slider.value = EnergyLevel;
         if (EnergyLevel < 1)
         {
-            Debug.Log("Timer " + timer);
-            Debug.Log("Time.Time " + Time.time);
-
             if ((Time.time - timer) > 0)
             {
                 AddPoints();
@@ -68,7 +64,7 @@ public class PlayerManager : MonoBehaviour
         {
             recoveryRate = 0.00001f;
         }
-        else recoveryRate = 0.1f;
+        else recoveryRate = 1f;
 
 
     }
@@ -79,14 +75,14 @@ public class PlayerManager : MonoBehaviour
         switch (popType)
         {
             case "Dodge": //which is DODGE value
-                EnergyLevel -=0.1f;
+                EnergyLevel -= dodgePopEnergy;
                 
 
                 //TODO: play animation on screen of pop being taken away
                 //TODO: 
                 break;
             case "Regular": //which is REGULAR POP value
-                EnergyLevel-=0.3f;
+                EnergyLevel-=regularPopEnergy;
                
                 //TODO: play animation on screen of pop being taken away
                 break;

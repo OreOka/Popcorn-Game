@@ -31,9 +31,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] internal AudioSource popSoundEffect;
     [SerializeField] internal AudioSource laserSoundEffect;
 
-    Vector2 m_CurrentPosition;
-    Vector2 m_PreviousPosition;
-    Vector2 m_NextMovement;
+    public GameObject cornKernel;
+  
     public float groundedRayCastDistance = 0.1f;
     Vector2[] m_RaycastPositions = new Vector2[3];
     ContactFilter2D m_ContactFilter;
@@ -42,6 +41,7 @@ public class PlayerController : MonoBehaviour
     Collider2D[] m_GroundColliders = new Collider2D[3];
     private State state;
     private float runTimer;
+    internal SpriteRenderer sprite;
     private PlayerManager m_PlayerManager;
     public LayerMask deathLayerMask;
 
@@ -55,13 +55,13 @@ public class PlayerController : MonoBehaviour
     {
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_LineRenderer= GetComponent<LineRenderer>();
-       
-        m_Capsule= GetComponent<CapsuleCollider2D>();
+        sprite= GetComponent<SpriteRenderer>();
+        cornKernel.SetActive(false);
+        m_Capsule = GetComponent<CapsuleCollider2D>();
         state = new PopCornState();
         state.SetPlayer(this);
 
-        m_CurrentPosition = m_Rigidbody.position;
-        m_PreviousPosition = m_Rigidbody.position;
+        
 
      
 
@@ -85,6 +85,8 @@ public class PlayerController : MonoBehaviour
        if (Input.GetButtonDown("Pop") && !canTransform && m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
        // if (Input.GetButtonDown("Jump") && !canTransform)
         {
+            cornKernel.SetActive(true);
+            sprite.enabled = false;
             laserSoundEffect.Play();
             ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
           //  m_PlayerManager.RecordPop("Regular");
@@ -106,12 +108,23 @@ public class PlayerController : MonoBehaviour
         if (canTransform)
         {
             timer = Time.time; //this to keep track of how long transformation has occured
-            canTransform = Transform(rightHorizontal, rightVertical, m_LineRenderer);
-            
-        }else if (Input.GetAxis("Horizontal") != 0)
+            //canTransform = Transform(rightHorizontal, rightVertical, m_LineRenderer);
+            direction = new Vector2(rightHorizontal, rightVertical) * 2;
+            direction = direction * power;
+            canTransform = state.PlayerMovement(direction, m_LineRenderer);
+
+
+        }
+        else if (Input.GetAxis("Horizontal") != 0 && IsGrounded())
         {
             runTimer += Time.deltaTime; // used in calculating how long the character has been running
             Run(leftHorizontal, leftVertical, m_LineRenderer);   
+        }
+        else if (Input.GetAxis("Horizontal") != 0)
+        {
+            runSpeed = 5;
+            runTimer += Time.deltaTime; // used in calculating how long the character has been running
+            Run(leftHorizontal, leftVertical, m_LineRenderer); 
         }
         else
         {
@@ -120,7 +133,9 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetButtonDown("Jump") && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
         {
+           // cornKernel.SetActive(true);
             popSoundEffect.Play();
+           // popSoundEffect.//
             ChangeRbPhysics(m_Rigidbody, 10, 10, 200);
             Vector2 _velocity = (new Vector2(m_Rigidbody.velocity.x, power));
             m_Rigidbody.velocity = _velocity;
@@ -158,7 +173,8 @@ public class PlayerController : MonoBehaviour
     private bool Transform(float horizontal, float vertical, LineRenderer line)
     {
         direction = new Vector2(horizontal, vertical) * 2;
-       return state.PlayerMovement(direction, line);
+        direction = direction * power;
+        return state.PlayerMovement(direction, line);
        // Debug.DrawRay(transform.position, new Vector3(direction.x, direction.y, 0) * 10f, Color.red);
        
 
@@ -281,6 +297,8 @@ public class PopCornState : State
             KernelState kernelState = new KernelState(Time.time);
             kernelState.SetPlayer(playerController);// it is important to do for everytransition so fix constructor
             playerController.TransitionTo(kernelState);
+            kernelState.PlayerMovement(direction, line);
+
             return true;
         }
         //      handle regular movement
@@ -308,6 +326,7 @@ public class KernelState : State
     private float loadTimer;
     private bool receivedPush = false;
     private float midPoint =0f; //element 0 for Midpoint, element 1 for transform
+    private float peakTimer;
 
     public float loadTime { get; private set; }
 
@@ -331,14 +350,10 @@ public class KernelState : State
     }
 
 
-    public override bool PlayerMovement(Vector2 direction, LineRenderer line)
+    public override bool PlayerMovement(Vector2 _velocity, LineRenderer line)
     {
 
         loadTime = 0.4f;
-
-        Vector2 _velocity; 
-        _velocity= direction * playerController.power;
-
 
          Vector2[] trajectory = playerController.Plot((Vector2)playerController.transform.position, _velocity, 250);
         bool isGoingForward = true;
@@ -351,7 +366,7 @@ public class KernelState : State
             isGoingForward = false;
 
         ///----------- This is when the character has received a push and is already in the air already.
-        if (receivedPush && popCornIsAtPeak(midPoint, isGoingForward))
+        if (receivedPush && (Time.time - peakTimer) > 0)
         {
             //Change state and reset temporary paramaters
         
@@ -385,10 +400,9 @@ public class KernelState : State
 
             playerController.popSoundEffect.Play();
             Time.timeScale = 1f;// 
-            
-
-            
-
+            peakTimer = Time.time + 0.15f;
+            playerController.sprite.enabled = true;
+            playerController.cornKernel.SetActive(false);
             playerController.m_Rigidbody.velocity = _velocity;
             receivedPush = true;
 
@@ -412,24 +426,14 @@ public class KernelState : State
 
         //check if player.transform is at that location.
 
-        if (isGoingForward)
-        {
-            if (playerController.transform.position.x >= midPoint)
-            {
-                Debug.Log("Transform: " + playerController.transform.position.x + "\nMidpoint: " +
-                    midPoint);
-            }
-            return playerController.transform.position.x >= midPoint;
-        }
-        else
-        {
-            if (playerController.transform.position.x <= midPoint)
-            {
-                Debug.Log("Transform: " + playerController.transform.position.x + "\nMidpoint: " +
-                    midPoint);
-            }
-            return playerController.transform.position.x <= midPoint;
-        }
+         if (isGoingForward)
+         {
+             return playerController.transform.position.x >= midPoint;
+         }
+         else
+         {
+             return playerController.transform.position.x <= midPoint;
+         }
     }
 
     public override void PoppingOut()
