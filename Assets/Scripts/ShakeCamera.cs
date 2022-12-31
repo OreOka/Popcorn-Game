@@ -7,6 +7,7 @@ public class ShakeCamea : MonoBehaviour
 {
     CinemachineBasicMultiChannelPerlin noisePerlin;
     CinemachineVirtualCamera vcam;
+    GameObject player;
     [SerializeField] private float shakeTime = 1f;
     [SerializeField] private float frequencyGain = 1f;
     [SerializeField] private float amplitudeGain= 1f;
@@ -16,7 +17,7 @@ public class ShakeCamea : MonoBehaviour
     private void Awake()
     {
         vcam = GetComponent<CinemachineVirtualCamera>();
-        noisePerlin = vcam.GetComponent<CinemachineBasicMultiChannelPerlin>();
+        noisePerlin = vcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
         CharacterEvents.characterPopped += ShakeonPop;
         CharacterEvents.characterDamaged += ShakeonHit;
     }
@@ -26,12 +27,15 @@ public class ShakeCamea : MonoBehaviour
         
         CharacterEvents.characterDamaged -= ShakeonHit;
     }
+  
 
     private void Update()
     {
+
         if (isShaking)
         {
-            shakeTimeElapsed = Time.deltaTime;
+        shakeTimeElapsed += Time.deltaTime;
+
             if (shakeTimeElapsed > shakeTime)
             {
                 StopShake();
@@ -59,6 +63,7 @@ public class ShakeCamea : MonoBehaviour
     public void StartShake()
     {
         Debug.Log("Shake Camera");
+        Debug.Log("Game object" + gameObject.tag);
         noisePerlin.m_AmplitudeGain = amplitudeGain;
         noisePerlin.m_FrequencyGain = frequencyGain;
         isShaking = true;

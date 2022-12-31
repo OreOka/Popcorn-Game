@@ -55,6 +55,8 @@ public class PlayerManager : MonoBehaviour
                 NumberOfActivePops--;
                 recoveryCouroutine = WaitAndRecover(dodgeRecoveryTime);
                 StartCoroutine(recoveryCouroutine);
+               
+
                 //TODO: play animation on screen of pop being taken away
                 //TODO: 
                 break;
