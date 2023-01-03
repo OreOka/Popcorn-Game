@@ -21,7 +21,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] AnimationCurve runSpeedCurve;
 
 
-    CapsuleCollider2D m_Capsule;
+     internal CapsuleCollider2D m_Capsule;
     [SerializeField] private LayerMask platformLayerMask;
     
     internal float timer;
@@ -87,6 +87,8 @@ public class PlayerController : MonoBehaviour
         {
             cornKernel.SetActive(true);
             sprite.enabled = false;
+            m_Capsule.size = new Vector2(6.940126f, 6.940126f);
+            m_Capsule.offset = new Vector2(0.1427921f, 0.08117199f);
             laserSoundEffect.Play();
             ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
           //  m_PlayerManager.RecordPop("Regular");
@@ -403,6 +405,9 @@ public class KernelState : State
             peakTimer = Time.time + 0.15f;
             playerController.sprite.enabled = true;
             playerController.cornKernel.SetActive(false);
+            playerController.m_Capsule.size = new Vector2(12.9884f, 20.48f);
+            playerController.m_Capsule.offset = new Vector2(0.1783689f, 0);
+
             playerController.m_Rigidbody.velocity = _velocity;
             receivedPush = true;
 
