@@ -15,7 +15,13 @@ public class PlayerController : MonoBehaviour
 {
     public float runSpeed = 10f;
     public float power = 5f;
-    
+    Vector2 colliderSize;
+    Vector2 colliderOffset;
+
+    public bool HasRunInput { get;  private set; }
+    public bool HasPopInput { get; set; }
+
+
     public Rigidbody2D m_Rigidbody;
     LineRenderer m_LineRenderer;
     [SerializeField] AnimationCurve runSpeedCurve;
@@ -26,7 +32,7 @@ public class PlayerController : MonoBehaviour
     
     internal float timer;
     internal bool canTransform = false;
-    private Vector2 direction;
+    public Vector2 lStickDirection { get; private set; }
 
     [SerializeField] internal AudioSource popSoundEffect;
     [SerializeField] internal AudioSource laserSoundEffect;
@@ -44,6 +50,8 @@ public class PlayerController : MonoBehaviour
     internal SpriteRenderer sprite;
     private PlayerManager m_PlayerManager;
     public LayerMask deathLayerMask;
+
+
 
     public bool IsCeilinged { get; private set; }
     public Vector2 Velocity { get; private set; }
@@ -74,25 +82,22 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         checkDeath();
+        
     }
     void Update()
     {
-        float leftHorizontal = Input.GetAxis("Horizontal");
-        float rightHorizontal = Input.GetAxis("Mouse X");
-        float leftVertical = Input.GetAxis("Vertical");
-        float rightVertical = Input.GetAxis("Mouse Y");
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
 
-       if (Input.GetButtonDown("Pop") && !canTransform && m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
-       // if (Input.GetButtonDown("Jump") && !canTransform)
+       if (Input.GetButtonDown("Pop") && !canTransform &&
+             m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
         {
-            cornKernel.SetActive(true);
+            
+           cornKernel.SetActive(true);
             sprite.enabled = false;
-            m_Capsule.size = new Vector2(6.940126f, 6.940126f);
-            m_Capsule.offset = new Vector2(0.1427921f, 0.08117199f);
             laserSoundEffect.Play();
-            ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
-          //  m_PlayerManager.RecordPop("Regular");
-            canTransform = true;
+
+            HasPopInput = true;
         }
        else if (m_PlayerManager.EnergyLevel < m_PlayerManager.regularPopEnergy)
         {
@@ -101,33 +106,25 @@ public class PlayerController : MonoBehaviour
 
 
 
-            isUsingPowerUp = Input.GetButton("Power up");
+            //isUsingPowerUp = Input.GetButton("Power up");
 
         //animation curve to set speed applicatiion
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
 
 
-        if (canTransform)
+      if (Input.GetAxis("Horizontal") != 0 && IsGrounded())
         {
-            timer = Time.time; //this to keep track of how long transformation has occured
-            //canTransform = Transform(rightHorizontal, rightVertical, m_LineRenderer);
-            direction = new Vector2(rightHorizontal, rightVertical) * 2;
-            direction = direction * power;
-            canTransform = state.PlayerMovement(direction, m_LineRenderer);
-
-
+           // runSpeed = 5;
+            runTimer += Time.deltaTime; // used in calculating how long the character has been running
+            //Run(horizontal, vertical, m_LineRenderer);
+            HasRunInput = true;
+            
         }
-        else if (Input.GetAxis("Horizontal") != 0 && IsGrounded())
+      /*  else if (Input.GetAxis("Horizontal") != 0)
         {
             runTimer += Time.deltaTime; // used in calculating how long the character has been running
-            Run(leftHorizontal, leftVertical, m_LineRenderer);   
-        }
-        else if (Input.GetAxis("Horizontal") != 0)
-        {
-            runSpeed = 5;
-            runTimer += Time.deltaTime; // used in calculating how long the character has been running
-            Run(leftHorizontal, leftVertical, m_LineRenderer); 
-        }
+            Run(horizontal, vertical, m_LineRenderer); 
+        }*/
         else
         {
             runTimer = 0;
@@ -143,10 +140,7 @@ public class PlayerController : MonoBehaviour
             m_Rigidbody.velocity = _velocity;
             CharacterEvents.characterPopped("Dodge", gameObject);
         }
-        else if (m_PlayerManager.EnergyLevel < m_PlayerManager.dodgePopEnergy)
-        {
-            //TODOsend event
-        }
+        
 
         
     }
@@ -167,16 +161,17 @@ public class PlayerController : MonoBehaviour
 
     private void Run(float horizontal, float vertical, LineRenderer lineRenderer)
     {
-        direction = new Vector2(horizontal, 0); // for only horizontal running
+        lStickDirection = new Vector2(horizontal, 0); // for only horizontal running
         
-        state.PlayerMovement(direction, lineRenderer);
+        state.PlayerMovement(lStickDirection, lineRenderer);
+
     }
 
     private bool Transform(float horizontal, float vertical, LineRenderer line)
     {
-        direction = new Vector2(horizontal, vertical) * 2;
-        direction = direction * power;
-        return state.PlayerMovement(direction, line);
+        lStickDirection = new Vector2(horizontal, vertical) * 2;
+        lStickDirection = lStickDirection * power;
+        return state.PlayerMovement(lStickDirection, line);
        // Debug.DrawRay(transform.position, new Vector3(direction.x, direction.y, 0) * 10f, Color.red);
        
 
@@ -357,7 +352,8 @@ public class KernelState : State
 
         loadTime = 0.4f;
 
-         Vector2[] trajectory = playerController.Plot((Vector2)playerController.transform.position, _velocity, 250);
+         Vector2[] trajectory = playerController.Plot((Vector2)playerController.transform.position, 
+                                        _velocity, 250);
         bool isGoingForward = true;
         if (midPoint == 0f || midPoint != trajectory[3].x)
             midPoint = trajectory[3].x;

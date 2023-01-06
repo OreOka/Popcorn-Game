@@ -24,7 +24,9 @@ public class GameManager : MonoBehaviour
     {
         if (character.tag == "Player")
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            SceneManager.LoadScene("Test level");
+            Resources.UnloadUnusedAssets();
+
 
         }
     }
