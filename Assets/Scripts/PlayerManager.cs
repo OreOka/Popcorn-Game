@@ -37,7 +37,7 @@ public class PlayerManager : MonoBehaviour
     void AddPoints()
     {
             EnergyLevel += .01f;
-            print("We are doing it");
+           
 
      }
 

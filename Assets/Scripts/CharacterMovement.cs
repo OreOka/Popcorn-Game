@@ -23,11 +23,10 @@ public class CharacterMovement : MonoBehaviour
     private SpriteRenderer sprite;
 
     Vector2[] trajectory;
-    private Vector2 direction = new Vector2(2,0);
-    private float peakTimer;
+    public Vector2 direction;
     private bool receivedPush = false;
-    public Vector2 _velocity;
-    private float timer;
+    public Vector2 velocity;
+    public float timer = 0;
     private Vector2 colliderSize;
     private Vector2 colliderOffset;
     private bool canPop;
@@ -39,45 +38,39 @@ public class CharacterMovement : MonoBehaviour
         sprite = GetComponent<SpriteRenderer>();
        
         m_Capsule = GetComponent<CapsuleCollider2D>();
-
-
         playerController = GetComponent<PlayerController>();
-
-
-
-
-
     }
 
     void Start()
     {
-        
+        canPop = false;
     }
 
     // Update is called once per frame
     void Update()
     {
+        direction = playerController.lStickDirection;
+        
+
         if (playerController.HasPopInput)
         {
-           
-
-            colliderSize.Set(6.940126f, 6.940126f);
-            m_Capsule.size = colliderSize;
-            colliderOffset.Set(0.1427921f, 0.08117199f);
-            m_Capsule.offset = colliderOffset;
-            ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
+            playerController.HasPopInput = false;
+            Debug.Log("Can Pop");
             canPop = true;
         }
-        if (playerController.HasRunInput)
-            PopCornRun();
-
         if (canPop)
         {
-            timer = Time.time;
-            _velocity = playerController.lStickDirection * 2 * power;
-            KernelPop(m_LineRenderer,0.4f, Time.time);
-
+            velocity = direction * 2 * power;
+            KernelPop(m_LineRenderer, 0.4f, direction * 2 * power);
         }
+        if (playerController.HasRunInput && !canPop)
+        {
+            velocity.Set(direction.x * playerController.runSpeed, m_Rigidbody.velocity.y);
+            PopCornRun(velocity);
+        }
+
+
+
     }
 
     public void ChangeRbPhysics(Rigidbody2D rigidbody, float gravityScale, float drag, float power)
@@ -87,10 +80,9 @@ public class CharacterMovement : MonoBehaviour
         this.power = power;
     }
 
-    void PopCornRun()
+    void PopCornRun(Vector2 _velocity)
     {
-        _velocity.Set(direction.x * playerController.runSpeed, m_Rigidbody.velocity.y);
-        m_Rigidbody.velocity = _velocity;
+        m_Rigidbody.velocity = velocity;
     }
     public Vector2[] Plot(Vector2 pos, Vector2 velocity, int steps)
     {
@@ -111,27 +103,35 @@ public class CharacterMovement : MonoBehaviour
         }
         return results;
     }
-    void KernelPop(LineRenderer lineRenderer, float popLoadTime, float loadTimer)
+    void KernelPop(LineRenderer lineRenderer, float popLoadTime, Vector2 _velocity)
     {
+        bool canSlomo = true;
         
-       
-
-        Vector2[] trajectory = playerController.Plot((Vector2)transform.position,
+        timer += Time.deltaTime;
+        Vector2[] trajectory = Plot((Vector2)transform.position,
                                        _velocity, 250);
 
 
-        if (receivedPush && (Time.time - peakTimer) > 0)
+        if (receivedPush && timer > popLoadTime+0.1f)
         {
             //Change state and reset temporary paramaters
+            Time.timeScale = 1f;// 
+            timer = 0;
+            canSlomo = false;
             canPop = false;
             receivedPush = false;
-            //return false;
+            colliderSize.Set(12.9884f, 20.48f);
+            m_Capsule.size = colliderSize;
+
+            colliderOffset.Set(0.1783689f, 0);
+            m_Capsule.offset = colliderOffset;
+            return;
         }
         lineRenderer.positionCount = trajectory.Length;
         Vector3[] positions = new Vector3[trajectory.Length];
         for (int i = 0; i < positions.Length; i++)
         {
-            positions[i] = this.trajectory[i];
+            positions[i] = trajectory[i];
         }
 
         lineRenderer.SetPositions(positions);
@@ -140,38 +140,36 @@ public class CharacterMovement : MonoBehaviour
 
         //check the timer  variables a video on Time time maybe??
         //loadTime = 0f;
-        if (timer > loadTimer + popLoadTime && receivedPush != true)// || Input.GetButtonUp("Pop"))
+        if ((timer >popLoadTime || Input.GetButtonUp("Pop") )&& !receivedPush )
         {
             CharacterEvents.characterPopped.Invoke("Regular", gameObject);
 
+
+            
+
+
             playerController.popSoundEffect.Play();
-            Time.timeScale = 1f;// 
-            peakTimer = Time.time + 0.15f;
             sprite.enabled = true;
             playerController.cornKernel.SetActive(false);
 
-            colliderSize.Set(12.9884f, 20.48f);
-            m_Capsule.size = colliderSize;
 
-            colliderOffset.Set(0.1783689f, 0);
-            m_Capsule.offset = colliderOffset;
 
             m_Rigidbody.velocity = _velocity;
             receivedPush = true;
-
+            playerController.HasPopInput = true;
+            return;
             //return true;
         }
-        else //if (timer <= loadTimer + popLoadTime)
+        if (canSlomo)//if (timer <= loadTimer + popLoadTime)
         {
+            
 
             Time.timeScale = 0.6f;// 
-           // return true;
+            colliderSize.Set(6.940126f, 6.940126f);
+            m_Capsule.size = colliderSize;
+            colliderOffset.Set(0.1427921f, 0.08117199f);
+            m_Capsule.offset = colliderOffset;
+            ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
         }
-       // else
-           // return true;
-
-
-    
-
-}
+    }
 }

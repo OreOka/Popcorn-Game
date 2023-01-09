@@ -15,10 +15,7 @@ public class PlayerController : MonoBehaviour
 {
     public float runSpeed = 10f;
     public float power = 5f;
-    Vector2 colliderSize;
-    Vector2 colliderOffset;
-
-    public bool HasRunInput { get;  private set; }
+    
     public bool HasPopInput { get; set; }
 
 
@@ -32,7 +29,6 @@ public class PlayerController : MonoBehaviour
     
     internal float timer;
     internal bool canTransform = false;
-    public Vector2 lStickDirection { get; private set; }
 
     [SerializeField] internal AudioSource popSoundEffect;
     [SerializeField] internal AudioSource laserSoundEffect;
@@ -40,11 +36,8 @@ public class PlayerController : MonoBehaviour
     public GameObject cornKernel;
   
     public float groundedRayCastDistance = 0.1f;
-    Vector2[] m_RaycastPositions = new Vector2[3];
-    ContactFilter2D m_ContactFilter;
-    RaycastHit2D[] m_HitBuffer = new RaycastHit2D[5];
-    RaycastHit2D[] m_FoundHits = new RaycastHit2D[3];
-    Collider2D[] m_GroundColliders = new Collider2D[3];
+    
+   
     private State state;
     private float runTimer;
     internal SpriteRenderer sprite;
@@ -54,9 +47,11 @@ public class PlayerController : MonoBehaviour
 
 
     public bool IsCeilinged { get; private set; }
+    public Vector2 lStickDirection; //;{ get; private set; }
     public Vector2 Velocity { get; private set; }
     public bool hasStamina { get; private set; }
     public bool isDodging { get; private set; }
+    public bool HasRunInput { get;  private set; }
     public bool isUsingPowerUp { get; private set; }
 
     void Awake()
@@ -66,11 +61,7 @@ public class PlayerController : MonoBehaviour
         sprite= GetComponent<SpriteRenderer>();
         cornKernel.SetActive(false);
         m_Capsule = GetComponent<CapsuleCollider2D>();
-        state = new PopCornState();
-        state.SetPlayer(this);
-
-        
-
+       
      
 
     }
@@ -88,12 +79,14 @@ public class PlayerController : MonoBehaviour
     {
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
+        lStickDirection.Set(horizontal, vertical);
 
-       if (Input.GetButtonDown("Pop") && !canTransform &&
+        if (Input.GetButtonDown("Pop") && !canTransform &&
              m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
         {
-            
-           cornKernel.SetActive(true);
+            lStickDirection.Set(0, 0);
+
+            cornKernel.SetActive(true);
             sprite.enabled = false;
             laserSoundEffect.Play();
 
@@ -103,7 +96,7 @@ public class PlayerController : MonoBehaviour
         {
             //TODO Send event
         }
-
+        
 
 
             //isUsingPowerUp = Input.GetButton("Power up");
@@ -112,11 +105,9 @@ public class PlayerController : MonoBehaviour
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
 
 
-      if (Input.GetAxis("Horizontal") != 0 && IsGrounded())
+      if (!HasPopInput && Input.GetAxis("Horizontal") != 0 && IsGrounded())
         {
-           // runSpeed = 5;
             runTimer += Time.deltaTime; // used in calculating how long the character has been running
-            //Run(horizontal, vertical, m_LineRenderer);
             HasRunInput = true;
             
         }
@@ -128,6 +119,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             runTimer = 0;
+            HasRunInput = false;
         }
 
         if (Input.GetButtonDown("Jump") && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
@@ -144,6 +136,7 @@ public class PlayerController : MonoBehaviour
 
         
     }
+  
 
     private float SetAnimationCurve(float runSpeed, AnimationCurve runSpeedCurve)
     {
@@ -159,23 +152,8 @@ public class PlayerController : MonoBehaviour
 
        
 
-    private void Run(float horizontal, float vertical, LineRenderer lineRenderer)
-    {
-        lStickDirection = new Vector2(horizontal, 0); // for only horizontal running
-        
-        state.PlayerMovement(lStickDirection, lineRenderer);
 
-    }
 
-    private bool Transform(float horizontal, float vertical, LineRenderer line)
-    {
-        lStickDirection = new Vector2(horizontal, vertical) * 2;
-        lStickDirection = lStickDirection * power;
-        return state.PlayerMovement(lStickDirection, line);
-       // Debug.DrawRay(transform.position, new Vector3(direction.x, direction.y, 0) * 10f, Color.red);
-       
-
-    }
     public bool getCanTransform()
     {
         return canTransform;
@@ -252,199 +230,3 @@ public class PlayerController : MonoBehaviour
 
 }
 
-public abstract class State
-{
-    public PlayerController playerController;
-
-    public CharacterEvents characterEvents;
- 
-
-    public void SetPlayer(PlayerController playerController)
-    {
-        this.playerController = playerController;
-    }
-
-    public abstract void IsHit();
-    //  PlayerMovement()
-    public abstract bool PlayerMovement(Vector2 direction, LineRenderer line);
-    public abstract void PoppingOut();
-    public abstract void Attack();
-
-
-}
-public class PopCornState : State
-{
-    Vector2 _velocity;
-
-
-    public override void Attack()
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override void IsHit()
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override bool PlayerMovement(Vector2 direction, LineRenderer line)
-    {
-        if (playerController.getCanTransform()) //player is beginning a kernel pop
-        {
-            KernelState kernelState = new KernelState(Time.time);
-            kernelState.SetPlayer(playerController);// it is important to do for everytransition so fix constructor
-            playerController.TransitionTo(kernelState);
-            kernelState.PlayerMovement(direction, line);
-
-            return true;
-        }
-        //      handle regular movement
-       // if(player.transform.position == new Vector3(3.30552506f, -7.82100248f, 0))
-       
-        
-            _velocity = new Vector2(direction.x * playerController.runSpeed, playerController.m_Rigidbody.velocity.y);
-            playerController.m_Rigidbody.velocity = _velocity;
-        
-     
-
-
-
-        return false;
-    }
-
-    public override void PoppingOut()
-    {
-        throw new System.NotImplementedException();
-    }
-}
-
-public class KernelState : State
-{
-    private float loadTimer;
-    private bool receivedPush = false;
-    private float midPoint =0f; //element 0 for Midpoint, element 1 for transform
-    private float peakTimer;
-
-    public float loadTime { get; private set; }
-
-    KernelState()
-    {
-
-    }
-    public KernelState(float loadTimer)
-    {
-        this.loadTimer = loadTimer;
-    }
-
-    public override void Attack()
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public override void IsHit()
-    {
-        throw new System.NotImplementedException();
-    }
-
-
-    public override bool PlayerMovement(Vector2 _velocity, LineRenderer line)
-    {
-
-        loadTime = 0.4f;
-
-         Vector2[] trajectory = playerController.Plot((Vector2)playerController.transform.position, 
-                                        _velocity, 250);
-        bool isGoingForward = true;
-        if (midPoint == 0f || midPoint != trajectory[3].x)
-            midPoint = trajectory[3].x;
-
-        if (trajectory[0].x < midPoint)
-            isGoingForward = true;
-        else
-            isGoingForward = false;
-
-        ///----------- This is when the character has received a push and is already in the air already.
-        if (receivedPush && (Time.time - peakTimer) > 0)
-        {
-            //Change state and reset temporary paramaters
-        
-            PopCornState popCornState = new PopCornState();
-            popCornState.SetPlayer(playerController);
-            this.playerController.TransitionTo(popCornState);
-            midPoint = 0f;
-            playerController.canTransform = false;
-            receivedPush = false;
-            return false;
-        }
-       
-
-
-        line.positionCount = trajectory.Length;
-        Vector3[] positions = new Vector3[trajectory.Length];
-        for (int i = 0; i < positions.Length; i++)
-        {
-            positions[i] = trajectory[i];
-        }
-
-        line.SetPositions(positions);
-
-
-
-        //check the timer  variables a video on Time time maybe??
-        //loadTime = 0f;
-        if (playerController.timer > loadTimer + loadTime && receivedPush != true)//-- you may want to add this again>>>
-        {
-            CharacterEvents.characterPopped.Invoke("Regular", playerController.gameObject);
-
-            playerController.popSoundEffect.Play();
-            Time.timeScale = 1f;// 
-            peakTimer = Time.time + 0.15f;
-            playerController.sprite.enabled = true;
-            playerController.cornKernel.SetActive(false);
-            playerController.m_Capsule.size = new Vector2(12.9884f, 20.48f);
-            playerController.m_Capsule.offset = new Vector2(0.1783689f, 0);
-
-            playerController.m_Rigidbody.velocity = _velocity;
-            receivedPush = true;
-
-            return true;
-        }
-        else if (playerController.timer <= loadTimer + loadTime)
-        {
-
-            Time.timeScale = 0.6f;// 
-            return true;
-        }
-        else
-            return true;
-      
-        
-        }
-
-    
-        private bool popCornIsAtPeak(float midPoint, bool isGoingForward)
-    {
-
-        //check if player.transform is at that location.
-
-         if (isGoingForward)
-         {
-             return playerController.transform.position.x >= midPoint;
-         }
-         else
-         {
-             return playerController.transform.position.x <= midPoint;
-         }
-    }
-
-    public override void PoppingOut()
-    {
-        
-    }
-    public void SetLoadTimer(float timer)
-    {
-        loadTimer = timer;
-  
-
-    }
-}
