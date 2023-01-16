@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 public class PlayerController : MonoBehaviour
 {
     public float runSpeed = 10f;
-    public float power = 5f;
+    
     
     public bool HasPopInput { get; set; }
 
@@ -53,6 +53,7 @@ public class PlayerController : MonoBehaviour
     public bool isDodging { get; private set; }
     public bool HasRunInput { get;  private set; }
     public bool isUsingPowerUp { get; private set; }
+    public bool HasDodgeInput { get;  set; }
 
     void Awake()
     {
@@ -85,6 +86,7 @@ public class PlayerController : MonoBehaviour
              m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
         {
             lStickDirection.Set(0, 0);
+            CharacterEvents.characterMode.Invoke("Kernel", gameObject);
 
             cornKernel.SetActive(true);
             sprite.enabled = false;
@@ -105,7 +107,7 @@ public class PlayerController : MonoBehaviour
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
 
 
-      if (!HasPopInput && Input.GetAxis("Horizontal") != 0 && IsGrounded())
+      if (!HasPopInput && Input.GetAxis("Horizontal") != 0)
         {
             runTimer += Time.deltaTime; // used in calculating how long the character has been running
             HasRunInput = true;
@@ -126,11 +128,10 @@ public class PlayerController : MonoBehaviour
         {
            // cornKernel.SetActive(true);
             popSoundEffect.Play();
-           // popSoundEffect.//
-            ChangeRbPhysics(m_Rigidbody, 10, 10, 200);
-            Vector2 _velocity = (new Vector2(m_Rigidbody.velocity.x, power));
-            m_Rigidbody.velocity = _velocity;
             CharacterEvents.characterPopped("Dodge", gameObject);
+            // popSoundEffect.//
+            //ChangeRbPhysics(m_Rigidbody, 10, 10, 200);
+            HasDodgeInput = true;
         }
         
 
@@ -147,7 +148,7 @@ public class PlayerController : MonoBehaviour
     {
         rigidbody.gravityScale = gravityScale;
         rigidbody.drag = drag;
-        this.power = power;
+       
     }
 
        

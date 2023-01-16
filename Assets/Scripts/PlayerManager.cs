@@ -9,6 +9,7 @@ public class PlayerManager : MonoBehaviour
 {
     public float regularPopEnergy = 0.3f;
     public float dodgePopEnergy= 0.22f;
+    
     private Slider slider;
     [SerializeField] private float recoveryRate  = 0.9f;
     private PlayerController playerController;
@@ -26,12 +27,14 @@ public class PlayerManager : MonoBehaviour
     private void Awake()
     {
         CharacterEvents.characterPopped += RecordPop;
+        CharacterEvents.characterDamaged += ApplyDamage;
         slider = GameObject.Find("PowerSlider").GetComponent<Slider>();
         playerController = GetComponent<PlayerController>();
     }
     private void OnDestroy()
     {
         CharacterEvents.characterPopped -= RecordPop;
+        CharacterEvents.characterDamaged -= ApplyDamage;
     }
 
     void AddPoints()
@@ -62,13 +65,16 @@ public class PlayerManager : MonoBehaviour
 
         if (playerController.IsGrounded())
         {
-            recoveryRate = 0.00001f;
+            EnergyLevel = 1;
         }
         else recoveryRate = 1f;
 
-
     }
 
+    private void ApplyDamage(float damageValue, GameObject gameObject)
+    {
+        throw new NotImplementedException();
+    }
 
     public void RecordPop(string popType, GameObject gameObject)
     {
