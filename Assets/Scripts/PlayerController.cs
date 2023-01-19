@@ -73,7 +73,7 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     private void FixedUpdate()
     {
-        checkDeath();
+        //checkDeath();
         
     }
     void Update()
@@ -82,10 +82,9 @@ public class PlayerController : MonoBehaviour
         float vertical = Input.GetAxis("Vertical");
         lStickDirection.Set(horizontal, vertical);
 
-        if (Input.GetButtonDown("Pop") && !canTransform &&
+        if (Input.GetButtonDown("Pop") &&
              m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
         {
-            lStickDirection.Set(0, 0);
             CharacterEvents.characterMode.Invoke("Kernel", gameObject);
 
             cornKernel.SetActive(true);
@@ -113,24 +112,16 @@ public class PlayerController : MonoBehaviour
             HasRunInput = true;
             
         }
-      /*  else if (Input.GetAxis("Horizontal") != 0)
-        {
-            runTimer += Time.deltaTime; // used in calculating how long the character has been running
-            Run(horizontal, vertical, m_LineRenderer); 
-        }*/
         else
         {
             runTimer = 0;
             HasRunInput = false;
         }
 
-        if (Input.GetButtonDown("Jump") && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
+        if (Input.GetButtonDown("Dodge") && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
         {
            // cornKernel.SetActive(true);
-            popSoundEffect.Play();
-            CharacterEvents.characterPopped("Dodge", gameObject);
-            // popSoundEffect.//
-            //ChangeRbPhysics(m_Rigidbody, 10, 10, 200);
+           
             HasDodgeInput = true;
         }
         
@@ -208,7 +199,7 @@ public class PlayerController : MonoBehaviour
         
     }
 
-    public bool IsGrounded()
+    public bool IsGrounded() 
     {
         
         float extraHeightText = 0.1f;

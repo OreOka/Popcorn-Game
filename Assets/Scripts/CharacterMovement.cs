@@ -62,7 +62,7 @@ public class CharacterMovement : MonoBehaviour
         if (playerController.HasPopInput)
         {
             playerController.HasPopInput = false;
-            m_Animator.SetBool("canPop", true);
+         //   m_Animator.SetBool("canPop", true);
             canPop = true;
         }
         if (playerController.HasDodgeInput)
@@ -75,19 +75,25 @@ public class CharacterMovement : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        
+        if (Math.Abs( direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
+
+        {
+            direction.Set(0, 1);
+        }
 
         if (canPop)
         {
             velocity = direction * 2 * popPower;
-            KernelPop(m_LineRenderer, 0.4f, direction * 2 * popPower);
-        }
+            KernelPop(0.4f, direction * 2 * popPower);
+        } else 
         
         if (canDodge)
         {
-            DodgePop(dodgeTime);
-        }
-        if (playerController.HasRunInput && !canPop)
+           //DodgePop(dodgeTime);
+            KernelPop(0.2f, direction * 1 * popPower);
+           
+        } else 
+        if (playerController.HasRunInput && !canPop && !canDodge)
         {
             velocity.Set(direction.x * playerController.runSpeed, m_Rigidbody.velocity.y);
             PopCornRun(velocity);
@@ -103,14 +109,12 @@ public class CharacterMovement : MonoBehaviour
     {
         return runSpeed =300* runSpeedCurve.Evaluate(DodgeTimer);
     }
-    void KernelPop(LineRenderer lineRenderer, float popLoadTime, Vector2 _velocity)
+    void KernelPop(float popLoadTime, Vector2 _velocity)
     {
         bool canSlomo = true;
 
         PopTimer += Time.deltaTime;
-        Vector2[] trajectory = Plot((Vector2)transform.position,
-                                       _velocity, 250);
-
+        
 
         if (receivedPush && PopTimer > popLoadTime + dodgeTime)
         {
@@ -118,24 +122,21 @@ public class CharacterMovement : MonoBehaviour
             Time.timeScale = 1f;// 
             PopTimer = 0;
             canSlomo = false;
-            canPop = false;
-            m_Animator.SetBool("canPop", false);
+            if (canPop) canPop = false;
+            if (canDodge) canDodge = false;
+           // m_Animator.SetBool("canPop", false);
             receivedPush = false;
             colliderSize.Set(12.9884f, 20.48f);
             m_Capsule.size = colliderSize;
 
             colliderOffset.Set(0.1783689f, 0);
             m_Capsule.offset = colliderOffset;
+            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
             return;
         }
-        lineRenderer.positionCount = trajectory.Length;
-        Vector3[] positions = new Vector3[trajectory.Length];
-        for (int i = 0; i < positions.Length; i++)
-        {
-            positions[i] = trajectory[i];
-        }
+        //DrawTrajectory(_velocity, m_LineRenderer);
 
-        lineRenderer.SetPositions(positions);
+        
 
 
 
@@ -143,7 +144,10 @@ public class CharacterMovement : MonoBehaviour
         //loadTime = 0f;
         if (/*(*/PopTimer > popLoadTime /*|| Input.GetButtonUp("Pop")) */&& !receivedPush)
         {
-            CharacterEvents.characterPopped.Invoke("Regular", gameObject);
+            if(canDodge)
+                CharacterEvents.characterPopped.Invoke("Dodge", gameObject);
+            else
+                CharacterEvents.characterPopped.Invoke("Regular", gameObject);
             CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
 
 
@@ -173,6 +177,21 @@ public class CharacterMovement : MonoBehaviour
         }
     }
 
+    private Vector3[] DrawTrajectory(Vector2 _velocity, LineRenderer lineRenderer)
+    {
+        Vector2[] trajectory = Plot((Vector2)transform.position,
+                                       _velocity, 250);
+
+        lineRenderer.positionCount = trajectory.Length;
+        Vector3[] positions = new Vector3[trajectory.Length];
+        for (int i = 0; i < positions.Length; i++)
+        {
+            positions[i] = trajectory[i];
+        }
+        lineRenderer.SetPositions(positions);
+        return positions;
+    }
+
     private void DodgePop(float dodgeTime)
     {
         Vector2 _velocity = direction * dodgeSpeed;
@@ -181,13 +200,17 @@ public class CharacterMovement : MonoBehaviour
         
         if(DodgeTimer < dodgeTime)
         {
+            Time.timeScale = 0.6f;
+           
             m_Rigidbody.MovePosition((Vector2)transform.position + (_velocity * Time.deltaTime));
            
         }
         else
         {
+            Time.timeScale = 1f;
             DodgeTimer = 0;
-            
+            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
+
             canDodge = false;
             
         }
@@ -203,14 +226,7 @@ public class CharacterMovement : MonoBehaviour
 
     void PopCornRun(Vector2 _velocity)
     {
-        if (playerController.IsGrounded())
-        {
-            m_Rigidbody.velocity = velocity;
-
-        }
-        else
-            m_Rigidbody.velocity.Set(velocity.x / 2, velocity.y);
-
+        m_Rigidbody.velocity = velocity;
     }
     public Vector2[] Plot(Vector2 pos, Vector2 velocity, int steps)
     {
@@ -231,5 +247,6 @@ public class CharacterMovement : MonoBehaviour
         }
         return results;
     }
+
    
 }

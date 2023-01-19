@@ -54,7 +54,7 @@ public class ShakeCamea : MonoBehaviour
     {
         if (characterPopping.tag == "Player")
         {
-            StartShake();
+            //StartShake();
         }
     }
 

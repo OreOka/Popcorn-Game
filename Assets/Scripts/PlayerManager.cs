@@ -13,6 +13,8 @@ public class PlayerManager : MonoBehaviour
     private Slider slider;
     [SerializeField] private float recoveryRate  = 0.9f;
     private PlayerController playerController;
+
+    [SerializeField] private float playerHealth = 100;
     
 
     
@@ -73,7 +75,10 @@ public class PlayerManager : MonoBehaviour
 
     private void ApplyDamage(float damageValue, GameObject gameObject)
     {
-        throw new NotImplementedException();
+        print("Character is losing health" + damageValue);
+        playerHealth += damageValue;
+        print(playerHealth);
+
     }
 
     public void RecordPop(string popType, GameObject gameObject)
