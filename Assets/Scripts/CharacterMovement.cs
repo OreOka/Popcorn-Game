@@ -75,6 +75,7 @@ public class CharacterMovement : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        //this is to set the default direction of the controller to face the sky so there always a defualt movement for the character
         if (Math.Abs( direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
 
         {
@@ -93,16 +94,13 @@ public class CharacterMovement : MonoBehaviour
             KernelPop(0.2f, direction * 1 * popPower);
            
         } else 
-        if (playerController.HasRunInput && !canPop && !canDodge)
+        if (playerController.HasRunInput )//&& !canPop && !canDodge)
         {
             velocity.Set(direction.x * playerController.runSpeed, m_Rigidbody.velocity.y);
             PopCornRun(velocity);
         }
        
-
-
        // m_Animator.SetBool("canPop", canPop);
-
 
     }
     private float SetAnimationCurve(float runSpeed, AnimationCurve runSpeedCurve)
@@ -116,9 +114,10 @@ public class CharacterMovement : MonoBehaviour
         PopTimer += Time.deltaTime;
         
 
-        if (receivedPush && PopTimer > popLoadTime + dodgeTime)
+        if (receivedPush && (PopTimer > popLoadTime + dodgeTime ||playerController.IsPopButtonReleased))
         {
             //Change state and reset temporary paramaters
+            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
             Time.timeScale = 1f;// 
             PopTimer = 0;
             canSlomo = false;
@@ -131,32 +130,24 @@ public class CharacterMovement : MonoBehaviour
 
             colliderOffset.Set(0.1783689f, 0);
             m_Capsule.offset = colliderOffset;
-            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
             return;
         }
         //DrawTrajectory(_velocity, m_LineRenderer);
 
-        
-
-
-
         //check the timer  variables a video on Time time maybe??
         //loadTime = 0f;
-        if (/*(*/PopTimer > popLoadTime /*|| Input.GetButtonUp("Pop")) */&& !receivedPush)
+        if (PopTimer > popLoadTime && playerController.IsPopButtonReleased && !receivedPush)
         {
             if(canDodge)
                 CharacterEvents.characterPopped.Invoke("Dodge", gameObject);
             else
                 CharacterEvents.characterPopped.Invoke("Regular", gameObject);
-            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
 
 
 
             playerController.popSoundEffect.Play();
             sprite.enabled = true;
             playerController.cornKernel.SetActive(false);
-
-
 
             m_Rigidbody.velocity = _velocity;
             receivedPush = true;
@@ -166,8 +157,7 @@ public class CharacterMovement : MonoBehaviour
         }
         if (canSlomo)//if (timer <= loadTimer + popLoadTime)
         {
-
-
+            CharacterEvents.characterMode.Invoke("Kernel", gameObject);
             Time.timeScale = 0.6f;// 
             colliderSize.Set(6.940126f, 6.940126f);
             m_Capsule.size = colliderSize;
@@ -210,9 +200,7 @@ public class CharacterMovement : MonoBehaviour
             Time.timeScale = 1f;
             DodgeTimer = 0;
             CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
-
             canDodge = false;
-            
         }
 
     }

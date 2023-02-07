@@ -54,6 +54,7 @@ public class PlayerController : MonoBehaviour
     public bool HasRunInput { get;  private set; }
     public bool isUsingPowerUp { get; private set; }
     public bool HasDodgeInput { get;  set; }
+    public bool IsPopButtonReleased { get; private set; }
 
     void Awake()
     {
@@ -73,7 +74,7 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     private void FixedUpdate()
     {
-        //checkDeath();
+        checkDeath();
         
     }
     void Update()
@@ -82,7 +83,7 @@ public class PlayerController : MonoBehaviour
         float vertical = Input.GetAxis("Vertical");
         lStickDirection.Set(horizontal, vertical);
 
-        if (Input.GetButtonDown("Pop") &&
+        if ((Input.GetButtonDown("Pop") || (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.Space))) &&
              m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
         {
             CharacterEvents.characterMode.Invoke("Kernel", gameObject);
@@ -93,24 +94,24 @@ public class PlayerController : MonoBehaviour
 
             HasPopInput = true;
         }
-       else if (m_PlayerManager.EnergyLevel < m_PlayerManager.regularPopEnergy)
+        else if (m_PlayerManager.EnergyLevel < m_PlayerManager.regularPopEnergy)
         {
             //TODO Send event
         }
-        
 
 
-            //isUsingPowerUp = Input.GetButton("Power up");
+
+        //isUsingPowerUp = Input.GetButton("Power up");
 
         //animation curve to set speed applicatiion
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
 
 
-      if (!HasPopInput && Input.GetAxis("Horizontal") != 0)
+        if (!HasPopInput && Input.GetAxis("Horizontal") != 0)
         {
             runTimer += Time.deltaTime; // used in calculating how long the character has been running
             HasRunInput = true;
-            
+
         }
         else
         {
@@ -120,16 +121,22 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetButtonDown("Dodge") && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
         {
-           // cornKernel.SetActive(true);
-           
+            // cornKernel.SetActive(true);
+
             HasDodgeInput = true;
         }
+
+        if (Input.GetButtonUp("Dodge") || Input.GetButtonUp("Pop"))
+        {
+            IsPopButtonReleased = true;
+        }
+        else if (Input.GetButtonDown("Dodge") || Input.GetButtonDown("Pop"))
+            IsPopButtonReleased = false;
         
 
         
     }
   
-
     private float SetAnimationCurve(float runSpeed, AnimationCurve runSpeedCurve)
     {
         return runSpeed = runSpeedCurve.Evaluate(runTimer);
@@ -141,9 +148,6 @@ public class PlayerController : MonoBehaviour
         rigidbody.drag = drag;
        
     }
-
-       
-
 
 
     public bool getCanTransform()

@@ -34,7 +34,7 @@ public class ShakeCamea : MonoBehaviour
 
     private void Update()
     {
-
+        
         if (isShaking)
         {
         shakeTimeElapsed += Time.deltaTime;

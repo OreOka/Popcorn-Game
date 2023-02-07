@@ -65,6 +65,8 @@ public class Platform : MonoBehaviour
                     }
 
                     break;
+                case PlatformType.Blade:
+
                 default:
                     print("no platform type set");
                     break;
