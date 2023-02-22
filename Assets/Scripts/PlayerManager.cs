@@ -76,7 +76,7 @@ public class PlayerManager : MonoBehaviour
     private void ApplyDamage(float damageValue, GameObject gameObject)
     {
         print("Character is losing health" + damageValue);
-        playerHealth += damageValue;
+        playerHealth -= damageValue;
         print(playerHealth);
 
     }

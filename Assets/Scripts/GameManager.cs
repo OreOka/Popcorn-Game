@@ -59,7 +59,7 @@ public class GameManager : MonoBehaviour
     }
     public void SetPlayerCheckPoint(Vector3 location)
     {
-        _checkpoint = location;
+        _checkpoint.Set(location.x, location.y, 0);
     }
     private void HandleDeath(GameObject character)
     {
