@@ -9,24 +9,23 @@ public class Platform : MonoBehaviour
 
     [SerializeField] private enum PlatformType {Water, Fire, Blade}
     [SerializeField] PlatformType platformType;
-    private string charactermode;
     private float totalTime = 1;
+    private CharacterMovement.OnPlayerMode mode;
 
     // Start is called before the first frame update
     void Start()
     {
-        
-    }
-    private void Awake()
-    {
-        CharacterEvents.characterMode += SetCharacterMode;
+        CharacterMovement.Instance.OnPlayerModeChange += Player_OnPlayerModeChange;
     }
 
-
-    private void OnDestroy()
+    private void Player_OnPlayerModeChange(object sender, CharacterMovement.OnPlayerMode e)
     {
-        CharacterEvents.characterMode -= SetCharacterMode;
+        mode = e;
     }
+
+  
+
+  
 
     // Update is called once per frame
     void Update()
@@ -39,10 +38,6 @@ public class Platform : MonoBehaviour
     }
    
     
-    private void SetCharacterMode(string mode, GameObject arg1)
-    {
-        charactermode = mode;
-    }
     private void OnTriggerStay2D(Collider2D col)
     {
         
@@ -55,7 +50,7 @@ public class Platform : MonoBehaviour
             {
                 case PlatformType.Water:
 
-                    if (charactermode.Equals("PopCorn"))
+                    if (mode.characterMode == CharacterMovement.CharacterMode.PopCorn)
                     {
                         totalTime += Time.deltaTime;
                         if (totalTime > 1)
@@ -67,12 +62,12 @@ public class Platform : MonoBehaviour
 
                     break;
                 case PlatformType.Fire:
-                    if (charactermode.Equals("Kernel"))
+                    if (mode.characterMode == CharacterMovement.CharacterMode.Kernel)
                     {
                         CharacterEvents.characterPowerup.Invoke("FiredUp", player);
 
                     }
-                    else if (charactermode.Equals("PopCorn"))
+                    else if (mode.characterMode == CharacterMovement.CharacterMode.PopCorn)
                     {
                         CharacterEvents.characterDamaged.Invoke(1, player);
 
@@ -80,11 +75,11 @@ public class Platform : MonoBehaviour
                     break;
 
                 case PlatformType.Blade:
-                    if (charactermode.Equals("Kernel"))
+                    if (mode.characterMode == CharacterMovement.CharacterMode.Kernel)
                     {
 
                     }
-                    else if (charactermode.Equals("PopCorn"))
+                    else if (mode.characterMode == CharacterMovement.CharacterMode.PopCorn)
                     {
                         CharacterEvents.characterDamaged.Invoke(1, player);
                     }

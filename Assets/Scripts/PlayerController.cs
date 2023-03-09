@@ -11,6 +11,7 @@ using UnityEngine.Animations;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using static UnityEditor.Timeline.TimelinePlaybackControls;
 
 
 public class PlayerController : MonoBehaviour
@@ -68,12 +69,19 @@ public class PlayerController : MonoBehaviour
     {
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_LineRenderer= GetComponent<LineRenderer>();
-        sprite= GetComponent<SpriteRenderer>();
+        //sprite= GetComponent<SpriteRenderer>();
         cornKernel.SetActive(false);
         m_Capsule = GetComponent<CapsuleCollider2D>();
 
-       // moveAction = actions.FindActionMap("Player").FindAction("Move");
+        moveAction = actions.FindActionMap("Player").FindAction("Move");
         actions.FindActionMap("Player").FindAction("Pop").performed += OnPop;
+        moveAction.performed += MoveAction_performed;
+
+    }
+
+    private void MoveAction_performed(InputAction.CallbackContext obj)
+    {
+        lStickDirection = obj.ReadValue<Vector2>();
 
     }
 
@@ -99,7 +107,8 @@ public class PlayerController : MonoBehaviour
     public void OnMove(InputAction.CallbackContext context)
     {
         // read the value for the "move" action each event call
-        lStickDirection = context.ReadValue<Vector2>();
+       
+
     }
 
 
@@ -148,17 +157,17 @@ public class PlayerController : MonoBehaviour
             runTimer = 0;
             HasRunInput = false;
         }
-        if (actions["Pop"].WasPressedThisFrame() && m_PlayerManager.EnergyLevel >= m_PlayerManager.regularPopEnergy)
+        if (actions["Pop"].WasPressedThisFrame() && GameManager.Instance.EnergyLevel >= GameManager.Instance.regularPopEnergy)
         {
 
             cornKernel.SetActive(true);
-            sprite.enabled = false;
+           // spzrite.enabled = false;
             laserSoundEffect.Play();
 
             HasPopInput = true;
         }
 
-        if (actions["Dodge"].WasPressedThisFrame()/*Input.GetButtonDown("Dodge")*/ && m_PlayerManager.EnergyLevel >= m_PlayerManager.dodgePopEnergy)
+        if (actions["Dodge"].WasPressedThisFrame()/*Input.GetButtonDown("Dodge")*/ && GameManager.Instance.EnergyLevel >= GameManager.Instance.dodgePopEnergy)
         {
             // cornKernel.SetActive(true);
 

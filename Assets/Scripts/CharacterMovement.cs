@@ -7,8 +7,39 @@ using UnityEngine.Events;
 using UnityEngine.Playables;
 using UnityEngine.U2D;
 
+
 public class CharacterMovement : MonoBehaviour
 {
+    public static CharacterMovement Instance { get; private set; }
+
+
+    public event EventHandler<OnPopTypeChangedEventArgs> OnPlayerPop;
+    public event EventHandler<OnPlayerMode> OnPlayerModeChange;
+
+    public class OnPopTypeChangedEventArgs : EventArgs
+    {
+        public PopType popType;
+    }
+
+    public class OnPlayerMode : EventArgs
+    {
+        public CharacterMode characterMode;
+    }
+
+    public enum PopType
+    {
+        Dodge,
+        Regular,
+    }
+
+    public enum CharacterMode
+    {
+        PopCorn,
+        Kernel,
+
+    }
+    
+
     [SerializeField] private float popLoadTime = 0.4f;
     [SerializeField] private float dodgeLoadTime = 0.2f;
     [SerializeField] private  float dodgeTime = 0.06f;
@@ -41,10 +72,11 @@ public class CharacterMovement : MonoBehaviour
     private bool canPop;
     private Animator m_Animator;
     private bool canDodge;
-    private UnityAction<string, GameObject> CharacterMode;
 
     void Awake()
     {
+        Instance = this;
+
         m_Rigidbody = GetComponent<Rigidbody2D>();
         m_LineRenderer = GetComponent<LineRenderer>();
         sprite = GetComponent<SpriteRenderer>();
@@ -52,12 +84,12 @@ public class CharacterMovement : MonoBehaviour
         m_Capsule = GetComponent<CapsuleCollider2D>();
         playerController = GetComponent<PlayerController>();
         CharacterEvents.characterDamaged += CharacterDamaged;
-        CharacterEvents.characterMode += CharacterMode;
     }
 
     void Start()
     {
         canPop = false;
+
     }
     private void Update()
     {
@@ -129,17 +161,27 @@ public class CharacterMovement : MonoBehaviour
 
         if ((PopTimer > popLoadTime || playerController.IsPopButtonReleased) && !receivedPush)
         {
-           // if (playerController.isKernelModeLocked) return;
+            // if (playerController.isKernelModeLocked) return;
 
             if (canDodge)
-                CharacterEvents.characterPopped.Invoke("Dodge", gameObject);
+            {
+                OnPlayerPop?.Invoke(this, new OnPopTypeChangedEventArgs
+                {
+                    popType = PopType.Dodge
+                });
+            }
             else
-                CharacterEvents.characterPopped.Invoke("Regular", gameObject);
+            {
+                OnPlayerPop?.Invoke(this, new OnPopTypeChangedEventArgs
+                {
+                    popType = PopType.Regular
+                });
+            }
 
 
 
             playerController.popSoundEffect.Play();
-            sprite.enabled = true;
+           // sprite.enabled = true;
             playerController.cornKernel.SetActive(false);
 
             m_Rigidbody.velocity = _velocity;
@@ -150,7 +192,10 @@ public class CharacterMovement : MonoBehaviour
         }
         if (canSlomo)//if (timer <= loadTimer + popLoadTime)
         {
-            CharacterEvents.characterMode.Invoke("Kernel", gameObject);
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.Kernel
+            });
             
             Time.timeScale = 0.6f;// 
             colliderSize.Set(6.940126f, 6.940126f);
@@ -163,7 +208,10 @@ public class CharacterMovement : MonoBehaviour
         if (receivedPush && (PopTimer > popLoadTime + dodgeTime || playerController.IsPopButtonReleased))
         {
             //Change state and reset temporary paramaters
-            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.PopCorn
+            });
             Time.timeScale = 1f;// 
             PopTimer = 0;
             canSlomo = false;
@@ -218,7 +266,10 @@ public class CharacterMovement : MonoBehaviour
         {
             Time.timeScale = 1f;
             DodgeTimer = 0;
-            CharacterEvents.characterMode.Invoke("PopCorn", gameObject);
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.PopCorn
+            });
             canDodge = false;
         }
 
