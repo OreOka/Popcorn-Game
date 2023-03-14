@@ -8,6 +8,7 @@ public class AttackHit : MonoBehaviour
     [SerializeField] AttacksWhat attacksWhat;
     private int launchDirection = 1;
     [SerializeField] private GameObject parent;
+    [SerializeField] private float damageValue;
 
     // Use this for initialization
     void Start()
@@ -34,6 +35,9 @@ public class AttackHit : MonoBehaviour
                 launchDirection = -1;
             }
             col.gameObject.GetComponent(attacksWhat.ToString()).SendMessage("Hit", launchDirection);
+            
+            CharacterEvents.characterDamaged.Invoke(damageValue);
+
         }
 
     }

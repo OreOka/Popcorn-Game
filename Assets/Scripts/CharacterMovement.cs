@@ -38,11 +38,12 @@ public class CharacterMovement : MonoBehaviour
         Kernel,
 
     }
-    
 
+    [SerializeField] private LayerMask platformLayerMask;
     [SerializeField] private float popLoadTime = 0.4f;
     [SerializeField] private float dodgeLoadTime = 0.2f;
     [SerializeField] private  float dodgeTime = 0.06f;
+    [SerializeField] private GameInput gameInput;
 
     // Start is called before the first frame update
 
@@ -90,24 +91,31 @@ public class CharacterMovement : MonoBehaviour
     {
         canPop = false;
 
+        gameInput.OnDodgePopAction += GameInput_OnDodgePopAction;
+        gameInput.OnPopAction += GameInput_OnPopAction;
+
     }
+
+    private void GameInput_OnPopAction(object sender, EventArgs e)
+    {
+        canPop = true;
+        velocity = direction * 2 * popPower;
+        if (true) //something to make sure there is no clash between pops
+            KernelToPop(popLoadTime, direction * 2 * popPower);
+    }
+
+    private void GameInput_OnDodgePopAction(object sender, EventArgs e)
+    {
+        if(true) //something to make sure there is no clash between pops
+            KernelToPop(dodgeLoadTime, direction * 1 * popPower);
+    }
+
     private void Update()
     {
-        direction = playerController.lStickDirection;
+        direction = gameInput.GetMovementVector();
 
-        SetAnimationCurve(dodgeSpeed, runSpeedCurve);
 
-        if (playerController.HasPopInput)
-        {
-            playerController.HasPopInput = false;
-         //   m_Animator.SetBool("canPop", true);
-            canPop = true;
-        }
-        if (playerController.HasDodgeInput)
-        {
-            playerController.HasDodgeInput = false;
-            canDodge = true;
-        }
+        runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
     }
 
     // Update is called once per frame
@@ -119,22 +127,9 @@ public class CharacterMovement : MonoBehaviour
         {
             direction.Set(0, 1);
         }
-
-        if (canPop)
-        {
-            velocity = direction * 2 * popPower;
-            KernelPop(popLoadTime, direction * 2 * popPower);
-        } else 
-        
-        if (canDodge)
-        {
-           //DodgePop(dodgeTime);
-            KernelPop(dodgeLoadTime, direction * 1 * popPower);
-           
-        } else 
         if (playerController.HasRunInput )//&& !canPop && !canDodge)
         {
-            velocity.Set(direction.x * playerController.runSpeed, m_Rigidbody.velocity.y);
+            velocity.Set(direction.x * runSpeed, m_Rigidbody.velocity.y);
             PopCornRun(velocity);
         }
        
@@ -142,7 +137,7 @@ public class CharacterMovement : MonoBehaviour
 
     }
 
-    private void CharacterDamaged(float _damage, GameObject character)
+    private void CharacterDamaged(float _damage)
     {
         m_Rigidbody.AddForce(new Vector2(2, 2), ForceMode2D.Impulse);
 
@@ -151,7 +146,7 @@ public class CharacterMovement : MonoBehaviour
     {
         return runSpeed =300* runSpeedCurve.Evaluate(DodgeTimer);
     }
-    void KernelPop(float popLoadTime, Vector2 _velocity)
+    void KernelToPop(float popLoadTime, Vector2 _velocity)
     {
         bool canSlomo = true;
 
@@ -234,7 +229,7 @@ public class CharacterMovement : MonoBehaviour
        
     }
 
-    private Vector3[] DrawTrajectory(Vector2 _velocity, LineRenderer lineRenderer)
+  /*  private Vector3[] DrawTrajectory(Vector2 _velocity, LineRenderer lineRenderer)
     {
         Vector2[] trajectory = Plot((Vector2)transform.position,
                                        _velocity, 250);
@@ -247,33 +242,9 @@ public class CharacterMovement : MonoBehaviour
         }
         lineRenderer.SetPositions(positions);
         return positions;
-    }
+    }*/
 
-    private void DodgePop(float dodgeTime)
-    {
-        Vector2 _velocity = direction * dodgeSpeed;
-        DodgeTimer += Time.deltaTime;
-      //  ChangeRbPhysics(m_Rigidbody, 1, 0, 200);
-        
-        if(DodgeTimer < dodgeTime)
-        {
-            Time.timeScale = 0.6f;
-           
-            m_Rigidbody.MovePosition((Vector2)transform.position + (_velocity * Time.deltaTime));
-           
-        }
-        else
-        {
-            Time.timeScale = 1f;
-            DodgeTimer = 0;
-            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
-            {
-                characterMode = CharacterMode.PopCorn
-            });
-            canDodge = false;
-        }
 
-    }
 
     public void ChangeRbPhysics(Rigidbody2D rigidbody, float gravityScale, float drag, float power)
     {
@@ -306,5 +277,24 @@ public class CharacterMovement : MonoBehaviour
         return results;
     }
 
-   
+    public bool IsGrounded()
+    {
+
+        float extraHeightText = 0.1f;
+
+        RaycastHit2D raycastHit = Physics2D.BoxCast(m_Capsule.bounds.center, m_Capsule.bounds.size, 0f, Vector2.down, extraHeightText, platformLayerMask);
+        Color rayColor;
+        if (raycastHit.collider != null)
+        {
+            rayColor = Color.green;
+        }
+        else
+        {
+            rayColor = Color.red;
+        }
+        Debug.DrawRay(m_Capsule.bounds.center + new Vector3(m_Capsule.bounds.extents.x, 0), Vector2.down * (m_Capsule.bounds.extents.y + extraHeightText), rayColor);
+        Debug.DrawRay(m_Capsule.bounds.center - new Vector3(m_Capsule.bounds.extents.x, 0), Vector2.down * (m_Capsule.bounds.extents.y + extraHeightText), rayColor);
+        Debug.DrawRay(m_Capsule.bounds.center - new Vector3(m_Capsule.bounds.extents.x, m_Capsule.bounds.extents.y + extraHeightText), Vector2.down * (m_Capsule.bounds.extents.x), rayColor);
+        return raycastHit.collider != null;
+    }
 }

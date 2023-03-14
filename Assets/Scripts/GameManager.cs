@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
+    public event EventHandler OnPlayerHealthChange;
+    public event EventHandler OnPlayerDead;
+
     private static GameManager _instance;
    
     public static GameManager Instance
@@ -24,10 +27,11 @@ public class GameManager : MonoBehaviour
     public float regularPopEnergy = 0.3f;
     public float dodgePopEnergy = 0.22f;
 
-    [SerializeField] private float recoveryRate = 0.9f;
+    [SerializeField] private float energyRecoveryRate = 0.9f;
 
     PlayerController playerController;
     private bool _isGameOver;
+    private float playerHealth = 100f;
     private string _startLevel = "Test Level";
 
     private Vector3 _checkpoint;
@@ -37,11 +41,32 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         _instance = this;
-        CharacterEvents.characterDefeated += HandleDeath;
-        CharacterEvents.NotAvailablePlayerAction += NullActionController;
         EnergyLevel = 1;
     }
+    private void Start()
+    {
+        
+        CharacterEvents.NotAvailablePlayerAction += NullActionController;
+        CharacterEvents.characterDamaged += ChangeCharacterHealth;
+    }
 
+    private void ChangeCharacterHealth(float healthpoints)
+    {
+        playerHealth -= healthpoints;
+        OnPlayerHealthChange?.Invoke(this, EventArgs.Empty);
+        if (playerHealth <= 0)
+        {
+            OnPlayerDead?.Invoke(this, EventArgs.Empty);
+        }
+
+
+    }
+
+    private void OnDestroy()
+    {
+        CharacterEvents.NotAvailablePlayerAction -= NullActionController;
+        
+    }
     private void NullActionController(string actionName, GameObject character)
     {
         throw new NotImplementedException();
@@ -78,31 +103,18 @@ public class GameManager : MonoBehaviour
             if ((Time.time - timer) > 0)
             {
                 EnergyLevel += .01f;
-                timer = Time.time+recoveryRate;
+                timer = Time.time+energyRecoveryRate;
             }
         }
-        else timer = Time.time + recoveryRate;
+        else timer = Time.time + energyRecoveryRate;
 
         if (playerController.IsGrounded())
         {
             EnergyLevel = 1;
         }
-        else recoveryRate = 1f;
+        else energyRecoveryRate = 1f;
     }
-    private void HandleDeath(GameObject character)
-    {
-        if (character.CompareTag("Player"))
-        {
-            character.transform.position = _checkpoint;
-
-        }
-
-        //ShowLoadingScreen
-        //load the current level scene additively || let the scene partLoader do it if it is already done
-        //moveplayer to location
-        //StartCoroutine for Loadin screen
-
-    }
+    
     public void RecordPop(string popType, GameObject gameObject)
     {
         switch (popType)

@@ -29,7 +29,7 @@ public class PlayerController : MonoBehaviour
     public Rigidbody2D m_Rigidbody;
     LineRenderer m_LineRenderer;
     [SerializeField] AnimationCurve runSpeedCurve;
-
+    
 
      internal CapsuleCollider2D m_Capsule;
     [SerializeField] private LayerMask platformLayerMask;
@@ -76,7 +76,6 @@ public class PlayerController : MonoBehaviour
         moveAction = actions.FindActionMap("Player").FindAction("Move");
         actions.FindActionMap("Player").FindAction("Pop").performed += OnPop;
         moveAction.performed += MoveAction_performed;
-
     }
 
     private void MoveAction_performed(InputAction.CallbackContext obj)
@@ -131,7 +130,7 @@ public class PlayerController : MonoBehaviour
         m_PlayerManager = gameObject.AddComponent(typeof(PlayerManager)) as PlayerManager;
     }
     // Update is called once per frame
-    private void FixedUpdate() => checkDeath();
+   // private void FixedUpdate() => //checkDeath();
 
     void Update()
     {
@@ -140,6 +139,7 @@ public class PlayerController : MonoBehaviour
         {
             IsKernelModeLocked = true;
             CharacterEvents.characterMode.Invoke("Kernel", gameObject);
+            
         }
 
         //animation curve to set speed applicatiion
@@ -160,9 +160,6 @@ public class PlayerController : MonoBehaviour
         if (actions["Pop"].WasPressedThisFrame() && GameManager.Instance.EnergyLevel >= GameManager.Instance.regularPopEnergy)
         {
 
-            cornKernel.SetActive(true);
-           // spzrite.enabled = false;
-            laserSoundEffect.Play();
 
             HasPopInput = true;
         }
@@ -232,7 +229,7 @@ public class PlayerController : MonoBehaviour
         if (raycastHit.collider != null)
         {
             rayColor = Color.green;
-            CharacterEvents.characterDefeated.Invoke(gameObject);
+           // CharacterEvents.characterDefeated.Invoke(gameObject);
 
         }
         else

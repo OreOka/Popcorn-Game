@@ -11,7 +11,7 @@ public class CharacterEvents : ScriptableObject
     public static UnityAction<string, GameObject> characterPowerup;
     public static UnityAction<string, GameObject> characterMode; // Strings could be "PopCorn" or "Kernel"
 
-    public static UnityAction<float, GameObject> characterDamaged;
+    public static UnityAction<float> characterDamaged;
 
     public static UnityAction<GameObject> characterDefeated;
     public static UnityAction<string, GameObject> NotAvailablePlayerAction;

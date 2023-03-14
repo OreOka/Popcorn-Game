@@ -44,10 +44,10 @@ public class ShakeCamea : MonoBehaviour
                 StopShake();
             }
         }
-        transform.position = new Vector3(
+       /* transform.position = new Vector3(
             Mathf.Clamp(targetToFollow.position.x, 30.7f, 395.8f),
             Mathf.Clamp(targetToFollow.position.y, 30, 41.12f),
-            transform.position.z);
+            transform.position.z);*/
 
     }
     public void ShakeonPop(string popType, GameObject characterPopping)
@@ -58,13 +58,9 @@ public class ShakeCamea : MonoBehaviour
         }
     }
 
-    public void ShakeonHit(float damage, GameObject characterHit)
+    public void ShakeonHit(float damage)
     {
-        if (characterHit.tag == "Player")
-        {
-            StartShake();
-
-        }
+        StartShake();
     }
     public void StartShake()
     {

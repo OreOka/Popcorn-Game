@@ -40,9 +40,8 @@ public class Platform : MonoBehaviour
     
     private void OnTriggerStay2D(Collider2D col)
     {
-        
-        GameObject player = col.gameObject;
-        if (col.CompareTag("Player"))
+        GameObject player = CharacterMovement.Instance.gameObject;
+        if (col.gameObject == player)
         {
             //check platform mode
 
@@ -55,7 +54,7 @@ public class Platform : MonoBehaviour
                         totalTime += Time.deltaTime;
                         if (totalTime > 1)
                         {
-                            CharacterEvents.characterDamaged.Invoke(1, player);
+                            CharacterEvents.characterDamaged.Invoke(1);
                             totalTime = 0;
                         }
                     }
@@ -69,7 +68,7 @@ public class Platform : MonoBehaviour
                     }
                     else if (mode.characterMode == CharacterMovement.CharacterMode.PopCorn)
                     {
-                        CharacterEvents.characterDamaged.Invoke(1, player);
+                        CharacterEvents.characterDamaged.Invoke(1);
 
                     }
                     break;
@@ -81,7 +80,7 @@ public class Platform : MonoBehaviour
                     }
                     else if (mode.characterMode == CharacterMovement.CharacterMode.PopCorn)
                     {
-                        CharacterEvents.characterDamaged.Invoke(1, player);
+                        CharacterEvents.characterDamaged.Invoke(1);
                     }
                     break;
 
