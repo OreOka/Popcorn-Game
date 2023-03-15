@@ -42,7 +42,7 @@ public partial class @Dandy: IInputActionCollection2, IDisposable
                     ""id"": ""cc67e8c2-1ff8-45be-a7de-1c552bfcaf2b"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
-                    ""interactions"": """",
+                    ""interactions"": ""Hold(duration=0.4)"",
                     ""initialStateCheck"": false
                 },
                 {
@@ -51,7 +51,7 @@ public partial class @Dandy: IInputActionCollection2, IDisposable
                     ""id"": ""45301a84-cc87-4779-b8ae-28779ad34800"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
-                    ""interactions"": """",
+                    ""interactions"": ""Hold(duration=0.2)"",
                     ""initialStateCheck"": false
                 },
                 {

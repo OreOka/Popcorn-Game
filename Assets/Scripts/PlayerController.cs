@@ -22,6 +22,14 @@ public class PlayerController : MonoBehaviour
 
     private InputAction moveAction;
 
+
+
+    /**
+     *setup hold interaction for Pop out 
+     *setup hold interaction fo dodge pop out
+     *when interaction is canceled or performed set canRun to true
+     *otherwise to false
+     **/
     
     public bool HasPopInput { get; set; }
 

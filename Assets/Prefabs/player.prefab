@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4373057982097101910}
-  - component: {fileID: 4373057982097102253}
   - component: {fileID: 4373057982097101904}
   - component: {fileID: 4373057982097101908}
   - component: {fileID: 4373057982097102248}
@@ -45,7 +44,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4373057982097102253
+--- !u!114 &4373057982097101904
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -54,12 +53,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 4373057982097102252}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b62e591b542f114cb1c0881d6803d04, type: 3}
+  m_Script: {fileID: 11500000, guid: f6a2d8ec13994824e8ae35e5dfb01839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  platformLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  popLoadTime: 0.4
+  dodgeLoadTime: 0.2
+  dodgeTime: 0.06
+  gameInput: {fileID: 0}
   runSpeed: 12
-  actions: {fileID: -944628639613478452, guid: 36097e716d7cfc14480a5cc9e197879b, type: 3}
-  m_Rigidbody: {fileID: 0}
   runSpeedCurve:
     serializedVersion: 2
     m_Curve:
@@ -111,66 +115,6 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 14.183899
       value: 9.494151
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  platformLayerMask:
-    serializedVersion: 2
-    m_Bits: 64
-  popSoundEffect: {fileID: 4373057982097101906}
-  laserSoundEffect: {fileID: 4373057982097101907}
-  cornKernel: {fileID: 4373057983053151768}
-  groundedRayCastDistance: 0.1
-  deathLayerMask:
-    serializedVersion: 2
-    m_Bits: 128
-  lStickDirection: {x: 0, y: 0}
---- !u!114 &4373057982097101904
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4373057982097102252}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6a2d8ec13994824e8ae35e5dfb01839, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  popLoadTime: 0.4
-  dodgeLoadTime: 0.2
-  dodgeTime: 0.06
-  runSpeed: 12
-  runSpeedCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 2
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.7449405
-      value: 0.6571298
-      inSlope: -1.6142099
-      outSlope: -1.6142099
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.1693503
-    - serializedVersion: 3
-      time: 0.99694824
-      value: 0.0004272461
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -581,6 +525,7 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &4373057982422965466
 GameObject:
   m_ObjectHideFlags: 0

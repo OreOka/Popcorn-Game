@@ -13,24 +13,16 @@ public class CharacterMovement : MonoBehaviour
     public static CharacterMovement Instance { get; private set; }
 
 
-    public event EventHandler<OnPopTypeChangedEventArgs> OnPlayerPop;
     public event EventHandler<OnPlayerMode> OnPlayerModeChange;
 
-    public class OnPopTypeChangedEventArgs : EventArgs
-    {
-        public PopType popType;
-    }
+   
 
     public class OnPlayerMode : EventArgs
     {
         public CharacterMode characterMode;
     }
 
-    public enum PopType
-    {
-        Dodge,
-        Regular,
-    }
+    
 
     public enum CharacterMode
     {
@@ -83,55 +75,96 @@ public class CharacterMovement : MonoBehaviour
         sprite = GetComponent<SpriteRenderer>();
         m_Animator = GetComponent<Animator>();
         m_Capsule = GetComponent<CapsuleCollider2D>();
-        playerController = GetComponent<PlayerController>();
         CharacterEvents.characterDamaged += CharacterDamaged;
     }
 
     void Start()
     {
         canPop = false;
-
-        gameInput.OnDodgePopAction += GameInput_OnDodgePopAction;
-        gameInput.OnPopAction += GameInput_OnPopAction;
+        ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
+        gameInput.OnDodgePopAction_completed += GameInput_OnDodgePopAction_completed;
+        gameInput.OnPopAction_completed += GameInput_OnPopAction_completed;
+        gameInput.OnDodgePopAction_started += GameInput_OnDodgePopAction_started;
+        gameInput.OnPopAction_started += GameInput_OnPopAction_started;
 
     }
 
-    private void GameInput_OnPopAction(object sender, EventArgs e)
+    private void GameInput_OnPopAction_started(object sender, EventArgs e)
     {
-        canPop = true;
+        Time.timeScale = 0.6f;
+        OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+        {
+            characterMode = CharacterMode.Kernel
+        });
+    }
+
+    private void GameInput_OnDodgePopAction_started(object sender, EventArgs e)
+    {
+
+        Time.timeScale = 0.6f;
+        OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+        {
+            characterMode = CharacterMode.Kernel
+        });
+    }
+
+
+    private void GameInput_OnPopAction_completed(object sender, EventArgs e)
+    {
+        print("PopCompleted");
+        Time.timeScale = 1f;
         velocity = direction * 2 * popPower;
         if (true) //something to make sure there is no clash between pops
-            KernelToPop(popLoadTime, direction * 2 * popPower);
+
+        {
+            m_Rigidbody.velocity = velocity;
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.PopCorn
+            });
+            
+           
+        }
+
+
     }
 
-    private void GameInput_OnDodgePopAction(object sender, EventArgs e)
+    private void GameInput_OnDodgePopAction_completed(object sender, EventArgs e)
     {
-        if(true) //something to make sure there is no clash between pops
-            KernelToPop(dodgeLoadTime, direction * 1 * popPower);
+        
+        print("DodgeCompleted");
+        Time.timeScale = 1f;
+        velocity = direction * popPower;
+        if (true) //something to make sure there is no clash between pops
+        {
+            m_Rigidbody.velocity = velocity;
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.PopCorn
+            });
+        }
     }
 
     private void Update()
     {
         direction = gameInput.GetMovementVector();
 
+        //this is to set the default direction of the controller to face the sky so there always a defualt movement for the character
+        if (Math.Abs(direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
 
+        {
+            direction.Set(0, 1);
+        }
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
+
+
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        //this is to set the default direction of the controller to face the sky so there always a defualt movement for the character
-        if (Math.Abs( direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
 
-        {
-            direction.Set(0, 1);
-        }
-        if (playerController.HasRunInput )//&& !canPop && !canDodge)
-        {
-            velocity.Set(direction.x * runSpeed, m_Rigidbody.velocity.y);
-            PopCornRun(velocity);
-        }
+      
        
        // m_Animator.SetBool("canPop", canPop);
 
@@ -146,6 +179,27 @@ public class CharacterMovement : MonoBehaviour
     {
         return runSpeed =300* runSpeedCurve.Evaluate(DodgeTimer);
     }
+
+
+
+/* 
+ * ---------------All of these need to be moved to visual -------------------
+ * private void KernelPopStart(Vector2 power)
+    {
+        //   KernelToPop(dodgeLoadTime, direction * 1 * popPower);
+        OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+        {
+            characterMode = CharacterMode.Kernel
+        });
+
+        Time.timeScale = 0.6f;// 
+        colliderSize.Set(6.940126f, 6.940126f);
+        m_Capsule.size = colliderSize;
+        colliderOffset.Set(0.1427921f, 0.08117199f);
+        m_Capsule.offset = colliderOffset;
+        ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
+    }-------------------------------------------------------------------*/
+
     void KernelToPop(float popLoadTime, Vector2 _velocity)
     {
         bool canSlomo = true;
@@ -158,20 +212,7 @@ public class CharacterMovement : MonoBehaviour
         {
             // if (playerController.isKernelModeLocked) return;
 
-            if (canDodge)
-            {
-                OnPlayerPop?.Invoke(this, new OnPopTypeChangedEventArgs
-                {
-                    popType = PopType.Dodge
-                });
-            }
-            else
-            {
-                OnPlayerPop?.Invoke(this, new OnPopTypeChangedEventArgs
-                {
-                    popType = PopType.Regular
-                });
-            }
+            
 
 
 
@@ -179,7 +220,7 @@ public class CharacterMovement : MonoBehaviour
            // sprite.enabled = true;
             playerController.cornKernel.SetActive(false);
 
-            m_Rigidbody.velocity = _velocity;
+           
             receivedPush = true;
             playerController.HasPopInput = true;
             return;
@@ -187,10 +228,7 @@ public class CharacterMovement : MonoBehaviour
         }
         if (canSlomo)//if (timer <= loadTimer + popLoadTime)
         {
-            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
-            {
-                characterMode = CharacterMode.Kernel
-            });
+           
             
             Time.timeScale = 0.6f;// 
             colliderSize.Set(6.940126f, 6.940126f);
@@ -203,11 +241,7 @@ public class CharacterMovement : MonoBehaviour
         if (receivedPush && (PopTimer > popLoadTime + dodgeTime || playerController.IsPopButtonReleased))
         {
             //Change state and reset temporary paramaters
-            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
-            {
-                characterMode = CharacterMode.PopCorn
-            });
-            Time.timeScale = 1f;// 
+           
             PopTimer = 0;
             canSlomo = false;
             if (canPop) canPop = false;
