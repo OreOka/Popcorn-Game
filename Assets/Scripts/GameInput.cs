@@ -12,10 +12,13 @@ public class GameInput : MonoBehaviour
 
     public event EventHandler OnDodgePopAction_completed;
     public event EventHandler OnDodgePopAction_started;
+    public event EventHandler OnDodgePopAction_canceled;
     public event EventHandler OnPopAction_completed;
     public event EventHandler OnPopAction_started;
+    public event EventHandler onPopAction_canceled;
     public event EventHandler onMovePerformed;
     public event EventHandler onMoveStarted;
+    public event EventHandler onKernelHold_performed;
 
     //private const string PLAYER_INPUT_BINDINGS
 
@@ -28,10 +31,10 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.Enable();
 
         playerInputActions.Player.Pop.performed += Pop_completed;
-        //playerInputActions.Player.Pop.canceled += Pop_completed;
+        playerInputActions.Player.Pop.canceled += Pop_canceled;
 
         playerInputActions.Player.Dodge.performed += Dodge_completed;
-     //   playerInputActions.Player.Dodge.canceled += Dodge_completed;
+        playerInputActions.Player.Dodge.canceled += Dodge_canceled;
 
         playerInputActions.Player.Pop.started += Pop_started;
         playerInputActions.Player.Dodge.started += Dodge_started; ;
@@ -39,17 +42,22 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.Move.performed += Move_performed;
         playerInputActions.Player.Move.started += Move_started;
 
+        playerInputActions.Player.KernelHold.performed += KernelHold_performed;
 
     }
 
-    
+    private void KernelHold_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        onKernelHold_performed?.Invoke(this, EventArgs.Empty);
+    }
+
     private void OnDestroy()
     {
         playerInputActions.Player.Pop.performed -= Pop_completed;
         playerInputActions.Player.Dodge.performed -= Dodge_completed;
 
-      //  playerInputActions.Player.Pop.canceled -= Pop_completed;
-       // playerInputActions.Player.Dodge.canceled -= Dodge_completed;
+        playerInputActions.Player.Pop.canceled -= Pop_canceled;
+        playerInputActions.Player.Dodge.canceled -= Dodge_canceled;
 
         playerInputActions.Player.Dodge.started -= Dodge_started;
         playerInputActions.Player.Pop.started -= Pop_started;
@@ -58,7 +66,15 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.Move.started -= Move_started;
 
     }
+    private void Pop_canceled(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        onPopAction_canceled?.Invoke(this, EventArgs.Empty);
+    }
 
+    private void Dodge_canceled(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnDodgePopAction_canceled?.Invoke(this, EventArgs.Empty);
+    }
 
 
     private void Move_started(UnityEngine.InputSystem.InputAction.CallbackContext obj)
@@ -89,14 +105,12 @@ public class GameInput : MonoBehaviour
     }
     private void Dodge_started(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
-        print("DODGE start");
-
+        OnDodgePopAction_started?.Invoke(this, EventArgs.Empty);    
     }
 
     private void Pop_started(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
-        print("POP start");
-
+        OnPopAction_started?.Invoke(this, EventArgs.Empty);
     }
 
 

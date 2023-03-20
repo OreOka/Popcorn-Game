@@ -2,8 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.Playables;
 using UnityEngine.U2D;
 
@@ -32,9 +34,6 @@ public class CharacterMovement : MonoBehaviour
     }
 
     [SerializeField] private LayerMask platformLayerMask;
-    [SerializeField] private float popLoadTime = 0.4f;
-    [SerializeField] private float dodgeLoadTime = 0.2f;
-    [SerializeField] private  float dodgeTime = 0.06f;
     [SerializeField] private GameInput gameInput;
 
     // Start is called before the first frame update
@@ -58,13 +57,12 @@ public class CharacterMovement : MonoBehaviour
     private bool receivedPush = false;
     public Vector2 velocity;
     private float PopTimer = 0;
-    private float DodgeTimer = 0;
-    [SerializeField] float dodgeSpeed = 5f;
     private Vector2 colliderSize;
     private Vector2 colliderOffset;
     private bool canPop;
     private Animator m_Animator;
     private bool canDodge;
+    private float runTimer;
 
     void Awake()
     {
@@ -84,9 +82,77 @@ public class CharacterMovement : MonoBehaviour
         ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
         gameInput.OnDodgePopAction_completed += GameInput_OnDodgePopAction_completed;
         gameInput.OnPopAction_completed += GameInput_OnPopAction_completed;
-        gameInput.OnDodgePopAction_started += GameInput_OnDodgePopAction_started;
         gameInput.OnPopAction_started += GameInput_OnPopAction_started;
+        gameInput.OnDodgePopAction_started += GameInput_OnDodgePopAction_started;
+        gameInput.onKernelHold_performed += GameInput_onKernelHold_performed;
+    }
 
+    private void Update()
+    {
+        direction = gameInput.GetMovementVector();
+
+        //this is to set the default direction of the controller to face the sky so there always a defualt movement for the character
+        if (Math.Abs(direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
+
+        {
+            direction.Set(0, 1);
+        }
+        runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
+
+        if (direction.x != 0)
+        {
+            runTimer += Time.deltaTime;
+        }
+        else
+        {
+            runTimer = 0;
+        }
+
+        velocity.Set(direction.x * runSpeed, m_Rigidbody.velocity.y);
+        PopCornRun(velocity);
+    }
+
+    private void GameInput_onKernelHold_performed(object sender, EventArgs e)
+    {
+        ChangeRbPhysics(m_Rigidbody, 2, 0, 100);
+        Debug.Log("kernel hold");
+
+    }
+
+    private void GameInput_onPopAction_canceled(object sender, EventArgs e)
+    {
+        print("PopCanceled");
+        Time.timeScale = 1f;
+        velocity = direction * 2 * popPower;
+        if (true) //something to make sure there is no clash between pops
+
+        {
+            m_Rigidbody.velocity = velocity;
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.PopCorn
+            });
+
+
+        }
+    }
+
+    private void GameInput_OnDodgePopAction_canceled(object sender, EventArgs e)
+    {
+        print("PopCanceled");
+        Time.timeScale = 1f;
+        velocity = direction * 1 * popPower;
+        if (true) //something to make sure there is no clash between pops
+
+        {
+            m_Rigidbody.velocity = velocity;
+            OnPlayerModeChange?.Invoke(this, new OnPlayerMode
+            {
+                characterMode = CharacterMode.PopCorn
+            });
+
+
+        }
     }
 
     private void GameInput_OnPopAction_started(object sender, EventArgs e)
@@ -107,6 +173,8 @@ public class CharacterMovement : MonoBehaviour
             characterMode = CharacterMode.Kernel
         });
     }
+
+
 
 
     private void GameInput_OnPopAction_completed(object sender, EventArgs e)
@@ -145,20 +213,7 @@ public class CharacterMovement : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        direction = gameInput.GetMovementVector();
-
-        //this is to set the default direction of the controller to face the sky so there always a defualt movement for the character
-        if (Math.Abs(direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
-
-        {
-            direction.Set(0, 1);
-        }
-        runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
-
-
-    }
+   
 
     // Update is called once per frame
     void FixedUpdate()
@@ -177,7 +232,7 @@ public class CharacterMovement : MonoBehaviour
     }
     private float SetAnimationCurve(float runSpeed, AnimationCurve runSpeedCurve)
     {
-        return runSpeed =300* runSpeedCurve.Evaluate(DodgeTimer);
+        return runSpeedCurve.Evaluate(runTimer);
     }
 
 
@@ -238,7 +293,7 @@ public class CharacterMovement : MonoBehaviour
             ChangeRbPhysics(m_Rigidbody, 5, 10, 200);
         }
 
-        if (receivedPush && (PopTimer > popLoadTime + dodgeTime || playerController.IsPopButtonReleased))
+        if (receivedPush && (PopTimer > popLoadTime  || playerController.IsPopButtonReleased))
         {
             //Change state and reset temporary paramaters
            
