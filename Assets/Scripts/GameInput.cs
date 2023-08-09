@@ -101,7 +101,6 @@ public class GameInput : MonoBehaviour
     private void Pop_completed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
        OnPopAction_completed?.Invoke(this, EventArgs.Empty);
-       
     }
     private void Dodge_started(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {

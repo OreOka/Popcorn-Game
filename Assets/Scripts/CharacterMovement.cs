@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem.LowLevel;
@@ -14,7 +15,7 @@ public class CharacterMovement : MonoBehaviour
 {
     public static CharacterMovement Instance { get; private set; }
 
-
+    public event EventHandler OnPlayerGrounded;
     public event EventHandler<OnPlayerMode> OnPlayerModeChange;
 
    
@@ -35,27 +36,17 @@ public class CharacterMovement : MonoBehaviour
 
     [SerializeField] private LayerMask platformLayerMask;
     [SerializeField] private GameInput gameInput;
+    [SerializeField] private AnimationCurve runSpeedCurve;
 
     // Start is called before the first frame update
-
-    public float runSpeed = 10f;
-    float popPower = 5f;
-
-    PlayerController playerController;
-
-   
-
+    private PlayerController playerController;
+    private float popPower = 5f;
     private CapsuleCollider2D m_Capsule;
-
     private Rigidbody2D m_Rigidbody;
     private LineRenderer m_LineRenderer;
-    [SerializeField] AnimationCurve runSpeedCurve;
     private SpriteRenderer sprite;
-
-    Vector2[] trajectory;
-    public Vector2 direction;
+    private Vector2[] trajectory;
     private bool receivedPush = false;
-    public Vector2 velocity;
     private float PopTimer = 0;
     private Vector2 colliderSize;
     private Vector2 colliderOffset;
@@ -63,6 +54,11 @@ public class CharacterMovement : MonoBehaviour
     private Animator m_Animator;
     private bool canDodge;
     private float runTimer;
+
+
+    public Vector2 direction;
+    public float runSpeed = 10f;
+    public Vector2 velocity;
 
     void Awake()
     {
@@ -91,12 +87,15 @@ public class CharacterMovement : MonoBehaviour
     {
         direction = gameInput.GetMovementVector();
 
+        SetPlayerRotation(direction);
         //this is to set the default direction of the controller to face the sky so there always a defualt movement for the character
         if (Math.Abs(direction.x) < 0.5f && Math.Abs(direction.y) < 0.5f)
 
         {
             direction.Set(0, 1);
+            
         }
+
         runSpeed = SetAnimationCurve(runSpeed, runSpeedCurve);
 
         if (direction.x != 0)
@@ -108,8 +107,28 @@ public class CharacterMovement : MonoBehaviour
             runTimer = 0;
         }
 
+        
+        
         velocity.Set(direction.x * runSpeed, m_Rigidbody.velocity.y);
         PopCornRun(velocity);
+        
+        
+    }
+
+    private void SetPlayerRotation(Vector2 direction)
+    {
+        if (direction.x== 1)
+        {
+            transform.rotation = Quaternion.AngleAxis(0, Vector3.up);
+        }
+        else if(direction.x < 0 && transform.rotation.y == 0)
+        {
+            transform.rotation = Quaternion.AngleAxis(180, Vector3.up);
+        }
+
+        
+        
+
     }
 
     private void GameInput_onKernelHold_performed(object sender, EventArgs e)
@@ -123,7 +142,7 @@ public class CharacterMovement : MonoBehaviour
     {
         print("PopCanceled");
         Time.timeScale = 1f;
-        velocity = direction * 2 * popPower;
+        velocity = 2 * popPower * direction;//double power
         if (true) //something to make sure there is no clash between pops
 
         {
@@ -132,14 +151,14 @@ public class CharacterMovement : MonoBehaviour
             {
                 characterMode = CharacterMode.PopCorn
             });
-
+          //  runTimer = 0; //this is so the player resets run cycles after popping
 
         }
     }
 
     private void GameInput_OnDodgePopAction_canceled(object sender, EventArgs e)
     {
-        print("PopCanceled");
+        print("Pop  Canceled");
         Time.timeScale = 1f;
         velocity = direction * 1 * popPower;
         if (true) //something to make sure there is no clash between pops
@@ -150,6 +169,7 @@ public class CharacterMovement : MonoBehaviour
             {
                 characterMode = CharacterMode.PopCorn
             });
+            runTimer = 0; //this is so the player resets run cycles after popping
 
 
         }
@@ -368,7 +388,7 @@ public class CharacterMovement : MonoBehaviour
 
     public bool IsGrounded()
     {
-
+        bool landed = false;
         float extraHeightText = 0.1f;
 
         RaycastHit2D raycastHit = Physics2D.BoxCast(m_Capsule.bounds.center, m_Capsule.bounds.size, 0f, Vector2.down, extraHeightText, platformLayerMask);
@@ -380,6 +400,17 @@ public class CharacterMovement : MonoBehaviour
         else
         {
             rayColor = Color.red;
+        }
+
+        if(raycastHit.collider != null)
+        {
+            if (landed)
+                return true;
+            OnPlayerGrounded?.Invoke(this, EventArgs.Empty);
+            landed = true;
+        }
+        else {
+            
         }
         Debug.DrawRay(m_Capsule.bounds.center + new Vector3(m_Capsule.bounds.extents.x, 0), Vector2.down * (m_Capsule.bounds.extents.y + extraHeightText), rayColor);
         Debug.DrawRay(m_Capsule.bounds.center - new Vector3(m_Capsule.bounds.extents.x, 0), Vector2.down * (m_Capsule.bounds.extents.y + extraHeightText), rayColor);
